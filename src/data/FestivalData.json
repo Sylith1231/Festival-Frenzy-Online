@@ -1,0 +1,142 @@
+[
+  {
+    "level": 1,
+    "name": "Isle of Wight",
+    "prices": {
+      "welliesCost": 4,
+      "sunglassesCost": 1,
+      "sellWelliesBW": 10,
+      "sellWelliesGW": 5,
+      "sellSunglassesGW": 5,
+      "sellSunglassesBW": 1
+    },
+    "weather": [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+    "image": "./banners/isleofwight.jpeg"
+  },
+  {
+    "level": 2,
+    "name": "Glastonbury",
+    "prices": {
+      "welliesCost": 2,
+      "sunglassesCost": 4,
+      "sellWelliesBW": 5,
+      "sellWelliesGW": 2,
+      "sellSunglassesGW": 10,
+      "sellSunglassesBW": 4
+    },
+    "weather": [0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1],
+    "image":"./banners/glastonbury.jpg"
+  },
+  {
+    "level": 3,
+    "name": "Lattitude",
+    "prices": {
+      "welliesCost": 4,
+      "sunglassesCost": 5,
+      "sellWelliesBW": 10,
+      "sellWelliesGW": 4,
+      "sellSunglassesGW": 10,
+      "sellSunglassesBW": 5
+    },
+    "weather": [0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1],
+    "image": "./banners/lattitude.jpeg"
+  },
+  {
+    "level": 4,
+    "name": "Womad Festival",
+    "prices": {
+      "welliesCost": 4,
+      "sunglassesCost": 2,
+      "sellWelliesBW": 10,
+      "sellWelliesGW": 2,
+      "sellSunglassesGW": 10,
+      "sellSunglassesBW": 1
+    },
+    "weather": [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+    "image": "./banners/womad.jpeg"
+  },
+  {
+    "level": 5,
+    "name": "Sonisphere",
+    "prices": {
+      "welliesCost": 2,
+      "sunglassesCost": 2,
+      "sellWelliesBW": 4,
+      "sellWelliesGW": 1,
+      "sellSunglassesGW": 4,
+      "sellSunglassesBW": 1
+    },
+    "weather": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
+    "image": "./banners/sonisphere.jpg"
+  },
+  {
+    "level": 6,
+    "name": "Big Chill Festival",
+    "prices": {
+      "welliesCost": 5,
+      "sunglassesCost": 3,
+      "sellWelliesBW": 15,
+      "sellWelliesGW": 1,
+      "sellSunglassesGW": 8,
+      "sellSunglassesBW": 1
+    },
+    "weather": [1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0],
+    "image": "./banners/biggchillfestival.jpg"
+  },
+  {
+    "level": 7,
+    "name": "The Big Green Gathering",
+    "prices": {
+      "welliesCost": 3,
+      "sunglassesCost": 4,
+      "sellWelliesBW": 17,
+      "sellWelliesGW": 1,
+      "sellSunglassesGW": 5,
+      "sellSunglassesBW": 1
+    },
+    "weather": [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+    "image": "./banners/bgg.jpg"
+  },
+  {
+    "level": 8,
+    "name": "V Festival",
+    "prices": {
+      "welliesCost": 5,
+      "sunglassesCost": 7,
+      "sellWelliesBW": 25,
+      "sellWelliesGW": 1,
+      "sellSunglassesGW": 20,
+      "sellSunglassesBW": 1
+    },
+    "weather": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+    "image": "./banners/vfestival.jpg"
+  },
+  {
+    "level": 9,
+    "name": "Reading / Leeds",
+    "prices": {
+      "welliesCost": 5,
+      "sunglassesCost": 5,
+      "sellWelliesBW": 15,
+      "sellWelliesGW": 1,
+      "sellSunglassesGW": 20,
+      "sellSunglassesBW": 1
+    },
+    "weather": [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0],
+    "image": "./banners/reading.jpg"
+  },
+  {
+    "level": 10,
+    "name": "Watson Festival",
+    "prices": {
+      "welliesCost": 4,
+      "sunglassesCost": 2,
+      "sellWelliesBW": 25,
+      "sellWelliesGW": 35,
+      "sellSunglassesGW": 1,
+      "sellSunglassesBW": 1
+    },
+    "weather": [1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0],
+    "image": "./glastonbury.jpg"
+  }
+]
