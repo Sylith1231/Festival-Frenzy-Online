@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, createHashRouter, RouterProvider } from 'react-router-dom';
 import { UsernameContextProvider } from './context/UsernameContext';
 import Landing from './pages/Landing';
 import WaitingRoom, { loader as waitingRoomLoader } from './pages/WaitingRoom';
@@ -6,7 +6,8 @@ import Host from './pages/Host';
 import Level from './pages/Level';
 import Leaderboard from './pages/Leaderboard';
 
-const router = createBrowserRouter(
+// const router = createBrowserRouter(
+const router = createHashRouter(
   [
     {
       path: '/',
@@ -34,8 +35,8 @@ const router = createBrowserRouter(
       element: <Leaderboard />,
     },
   ],
-  // { basename: import.meta.env.DEV ? '/' : '/Festival-Frenzy-Online/' },
-  { basename: '/Festival-Frenzy-Online/' },
+  { basename: import.meta.env.DEV ? '/' : '/Festival-Frenzy-Online/' },
+  // { basename: '/Festival-Frenzy-Online/' },
 );
 
 function App() {
