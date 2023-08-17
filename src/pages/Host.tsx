@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom';
 import { firestore } from '../firebase.ts';
 import { useEffect, useState } from 'react';
 import { collection, doc, getDoc, getDocs, onSnapshot, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
-import festivalData from '../data/festivalData.json';
+import festivalData from '../data/FestivalData.json';
 
 export default function Host() {
   const sessionID = useParams().sessionID ?? '';
