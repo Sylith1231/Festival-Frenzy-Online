@@ -28,7 +28,7 @@ function Input() {
       console.log('error');
     }
   }
-
+  console.log(import.meta.env.DEV);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', rowGap: '18px' }}>
       <div id='input-container'>
