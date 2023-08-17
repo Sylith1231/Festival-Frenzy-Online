@@ -39,9 +39,6 @@ function Input() {
       <button id='start_button' type='button' onClick={() => joinQuiz(code)}>
         Join Session!
       </button>
-      <button id='host-button' style={{ position: 'absolute', bottom: '20px', right: '20px' }} type='button' onClick={() => navigate('/host/1')}>
-        Host
-      </button>
     </div>
   );
 }
