@@ -1,5 +1,4 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { Test } from './pages/test';
 import { UsernameContextProvider } from './context/UsernameContext';
 import Landing from './pages/Landing';
 import WaitingRoom, { loader as waitingRoomLoader } from './pages/WaitingRoom';
@@ -12,10 +11,10 @@ const router = createBrowserRouter([
     path: '/',
     element: <Landing />,
   },
-  {
-    path: '/test',
-    element: <Test />,
-  },
+  // {
+  //   path: '/test',
+  //   element: <Test />,
+  // },
   {
     path: '/waiting-room/:sessionID',
     element: <WaitingRoom />,
