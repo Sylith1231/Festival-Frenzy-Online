@@ -36,7 +36,7 @@ const router = createHashRouter(
     },
   ],
   // { basename: import.meta.env.DEV ? '/' : '/Festival-Frenzy-Online/' },
-  { basename: '/Festival-Frenzy-Online/' },
+  // { basename: '/Festival-Frenzy-Online/' },
 );
 
 function App() {
