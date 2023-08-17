@@ -15,7 +15,7 @@ import Die4 from '../assets/die/die4.png';
 import Die5 from '../assets/die/die5.png';
 import Die6 from '../assets/die/die6.png';
 
-import festivalData from '../data/festivalData.json';
+import festivalData from '../data/FestivalData.json';
 import { Dispatch, SetStateAction, useContext, useEffect, useState } from 'react';
 import { UsernameContext } from '../context/UsernameContext';
 import { firestore } from '../firebase';
