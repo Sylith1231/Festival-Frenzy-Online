@@ -34,7 +34,8 @@ const router = createBrowserRouter(
       element: <Leaderboard />,
     },
   ],
-  { basename: import.meta.env.DEV ? '/' : '/Festival-Frenzy-Online/' },
+  // { basename: import.meta.env.DEV ? '/' : '/Festival-Frenzy-Online/' },
+  { basename: '/Festival-Frenzy-Online/' },
 );
 
 function App() {
