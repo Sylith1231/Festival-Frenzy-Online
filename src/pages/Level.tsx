@@ -1,7 +1,3 @@
-//TODO add orderSubmitted info to context so button doesn't render as not submitted on refresh.
-//TODO I don't think sessionID should come from params (infinite loop).
-
-import IsleOfWight from '../assets/festival-banners/isle-of-wight.jpeg';
 import Sun from '../assets/sun.png';
 import Rain from '../assets/rain.jpeg';
 import Sunglasses from '../assets/sunglasses.png';
@@ -40,7 +36,6 @@ export default function level() {
   const levelData = festivalData[Math.floor(currentLevel / 2)];
   const tempBalance = balance - welliesQty * levelData.prices.welliesCost - sunglassesQty * levelData.prices.sunglassesCost;
   const docRef = doc(firestore, 'sessions', sessionID);
-  console.log('currentLevel: ', currentLevel);
 
   const navigate = useNavigate();
 
@@ -50,6 +45,9 @@ export default function level() {
       const data = doc.data();
       if (data) {
         setBalance(data.balance);
+        setWelliesQty(data.orders[currentLevel]?.welliesQty ?? 0);
+        setSunglassesQty(data.orders[currentLevel]?.sunglassesQty ?? 0);
+        setOrderSubmitted(data.orders[currentLevel]?.orderSubmitted ?? false);
       }
     });
     const unsubscribe = onSnapshot(docRef, (doc) => {
@@ -59,7 +57,7 @@ export default function level() {
           setFinalDieValues(data.dieValues[currentLevel]);
         }
       }
-      if (data?.currentLevel % 2 == 0) navigate(`/leaderboard/${sessionID}`);
+      if (data?.currentLevel < 0) navigate(`/leaderboard/${sessionID}`);
     });
 
     return () => {
@@ -68,7 +66,7 @@ export default function level() {
     };
   }, [username, sessionID]);
 
-  console.log(levelData.image);
+  console.log('welliesQty: ', welliesQty);
   return (
     // <div className='background-image level-container' style={{ backgroundImage: `url(${IsleOfWight})` }}>
     <div className='background-image level-container' style={{ backgroundImage: `url(${levelData.image})` }}>

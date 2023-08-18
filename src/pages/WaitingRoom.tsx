@@ -29,7 +29,9 @@ export default function WaitingRoom() {
   const [users, setUsers] = useState(useLoaderData() as string[]);
   const sessionID: string = useParams()?.sessionID ?? '';
   const { username, setUsername } = useContext(UsernameContext);
-  const [userInGame, setUserInGame] = useState(false);
+  const [tempUsername, setTempUsername] = useState('');
+  // const [userInGame, setUserInGame] = useState(false);
+  const userInGame = username != '';
   const navigate = useNavigate();
 
   //TODO load data solely in useeffect not in loader.
@@ -55,12 +57,15 @@ export default function WaitingRoom() {
   //TODO - validate against empty string etc.
   async function handleAddPlayer(username: string) {
     const docRef = doc(firestore, 'sessions', sessionID);
-    setUserInGame(true);
+    // setUserInGame(true);
     await updateDoc(docRef, { users: arrayUnion(username) });
     setUsername(username);
+    sessionStorage.setItem('username', username);
   }
 
   //TODO - add loading state.
+  console.log('sessionStorage.username: ', sessionStorage.getItem('username'));
+  console.log('username: ', username);
   return (
     <div className='background-image' style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundImage: `url(${LandingBackground})` }}>
       <div className='waiting-room-container'>
@@ -71,8 +76,8 @@ export default function WaitingRoom() {
         <div className='team-tiles'>
           {!userInGame ? (
             <div className='team-tile-container' style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <input className='username-input' placeholder='Type your name...' type='text' onChange={(e) => setUsername(e.target.value)} />
-              <button style={{ backgroundColor: 'transparent', border: 'none', outline: ' none', padding: '0', cursor: 'pointer' }} onClick={() => handleAddPlayer(username)}>
+              <input className='username-input' placeholder='Type your name...' type='text' onChange={(e) => setTempUsername(e.target.value)} />
+              <button style={{ backgroundColor: 'transparent', border: 'none', outline: ' none', padding: '0', cursor: 'pointer' }} onClick={() => handleAddPlayer(tempUsername)}>
                 <img src={JoinIcon} width='30px' />
               </button>
             </div>

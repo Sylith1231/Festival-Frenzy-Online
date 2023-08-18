@@ -12,7 +12,7 @@ interface props {
 }
 
 export const UsernameContextProvider: FC<props> = function ({ children }) {
-  const [username, setUsername] = useState<string>('');
+  const [username, setUsername] = useState<string>(sessionStorage.getItem('username') ?? '');
 
   return <UsernameContext.Provider value={{ username, setUsername }}>{children}</UsernameContext.Provider>;
 };

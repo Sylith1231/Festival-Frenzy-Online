@@ -1,10 +1,18 @@
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { firestore } from '../firebase.ts';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import LandingBackground from '../assets/landing-background.jpeg';
+import { UsernameContext } from '../context/UsernameContext.tsx';
 
 export default function Landing() {
+  const { setUsername } = useContext(UsernameContext);
+
+  useEffect(() => {
+    sessionStorage.clear();
+    setUsername('');
+  }, []);
+
   return (
     <div className='background-image center-children' style={{ display: 'flex', flexDirection: 'column', backgroundImage: `url(${LandingBackground})` }}>
       {/* <h1 className='title'>
@@ -28,7 +36,7 @@ function Input() {
       console.log('error');
     }
   }
-  console.log(import.meta.env.DEV);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', rowGap: '18px' }}>
       <div id='input-container'>

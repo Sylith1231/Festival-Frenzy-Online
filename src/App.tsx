@@ -1,10 +1,11 @@
-import { createBrowserRouter, createHashRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, createHashRouter, redirect, RouterProvider } from 'react-router-dom';
 import { UsernameContextProvider } from './context/UsernameContext';
 import Landing from './pages/Landing';
 import WaitingRoom, { loader as waitingRoomLoader } from './pages/WaitingRoom';
 import Host from './pages/Host';
 import Level from './pages/Level';
 import Leaderboard from './pages/Leaderboard';
+import Test from './pages/Test';
 
 function chooseRouter() {
   if (import.meta.env.DEV) {
@@ -14,16 +15,24 @@ function chooseRouter() {
   }
 }
 
+function authLoader() {
+  const username = sessionStorage.getItem('username');
+  if (!username) {
+    return redirect('/');
+  }
+  return null;
+}
+
 const router = chooseRouter()(
   [
     {
       path: '/',
       element: <Landing />,
     },
-    // {
-    //   path: '/test',
-    //   element: <Test />,
-    // },
+    {
+      path: '/test',
+      element: <Test />,
+    },
     {
       path: '/waiting-room/:sessionID',
       element: <WaitingRoom />,
@@ -36,10 +45,16 @@ const router = chooseRouter()(
     {
       path: '/level/:sessionID/:levelID',
       element: <Level />,
+      loader: authLoader,
     },
     {
       path: '/leaderboard/:sessionID',
       element: <Leaderboard />,
+      loader: authLoader,
+    },
+    {
+      path: '/*',
+      loader: () => redirect('/'),
     },
   ],
   { basename: import.meta.env.DEV ? '/' : '/Festival-Frenzy-Online/' },

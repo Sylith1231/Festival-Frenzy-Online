@@ -16,7 +16,7 @@ export default function Leaderboard() {
     const unsubscribe = onSnapshot(doc(firestore, 'sessions', sessionID), (doc) => {
       const currentLevel = doc.data()?.currentLevel;
       console.log('currentLevel: ', currentLevel);
-      if (currentLevel % 2 == 1) {
+      if (currentLevel > 0) {
         navigate(`/level/${sessionID}/${currentLevel}`);
       }
     });
