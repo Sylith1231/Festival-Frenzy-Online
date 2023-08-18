@@ -1,4 +1,4 @@
-import { createHashRouter, redirect, RouterProvider } from 'react-router-dom';
+import { createHashRouter, RouterProvider } from 'react-router-dom';
 import { UsernameContextProvider } from './context/UsernameContext';
 import Landing from './pages/Landing';
 import WaitingRoom, { loader as waitingRoomLoader } from './pages/WaitingRoom';
@@ -53,10 +53,10 @@ const router = createHashRouter(
       element: <Leaderboard />,
       // loader: authLoader,
     },
-    {
-      path: '/*',
-      loader: () => redirect('/'),
-    },
+    // {
+    //   path: '/*',
+    //   loader: () => redirect('/'),
+    // },
   ],
   { basename: import.meta.env.DEV ? '/' : '/Festival-Frenzy-Online/' },
 );
