@@ -11,7 +11,7 @@
       "sellSunglassesBW": 1
     },
     "weather": [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
-    "image": "./banners/isleofwight.jpeg"
+    "image": "../../src/assets/festival-banners/isle-of-wight.jpeg"
   },
   {
     "level": 2,
@@ -25,7 +25,7 @@
       "sellSunglassesBW": 4
     },
     "weather": [0, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1],
-    "image":"./banners/glastonbury.jpg"
+    "image": "../../src/assets/festival-banners/glastonbury.jpg"
   },
   {
     "level": 3,
@@ -39,7 +39,7 @@
       "sellSunglassesBW": 5
     },
     "weather": [0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1],
-    "image": "./banners/lattitude.jpeg"
+    "image": "../../src/assets/festival-banners/lattitude.jpeg"
   },
   {
     "level": 4,
@@ -53,7 +53,7 @@
       "sellSunglassesBW": 1
     },
     "weather": [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
-    "image": "./banners/womad.jpeg"
+    "image": "../../src/assets/festival-banners/womad.jpeg"
   },
   {
     "level": 5,
@@ -67,7 +67,7 @@
       "sellSunglassesBW": 1
     },
     "weather": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
-    "image": "./banners/sonisphere.jpg"
+    "image": "../../src/assets/festival-banners/sonisphere.jpg"
   },
   {
     "level": 6,
@@ -81,7 +81,7 @@
       "sellSunglassesBW": 1
     },
     "weather": [1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0],
-    "image": "./banners/biggchillfestival.jpg"
+    "image": "../../src/assets/festival-banners/biggchillfestival.jpg"
   },
   {
     "level": 7,
@@ -95,7 +95,7 @@
       "sellSunglassesBW": 1
     },
     "weather": [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-    "image": "./banners/bgg.jpg"
+    "image": "../../src/assets/festival-banners/bgg.jpg"
   },
   {
     "level": 8,
@@ -109,7 +109,7 @@
       "sellSunglassesBW": 1
     },
     "weather": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
-    "image": "./banners/vfestival.jpg"
+    "image": "../../src/assets/festival-banners/vfestival.jpg"
   },
   {
     "level": 9,
@@ -123,7 +123,7 @@
       "sellSunglassesBW": 1
     },
     "weather": [0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0],
-    "image": "./banners/reading.jpg"
+    "image": "../../src/assets/festival-banners/reading.jpg"
   },
   {
     "level": 10,
@@ -137,6 +137,6 @@
       "sellSunglassesBW": 1
     },
     "weather": [1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0],
-    "image": "./glastonbury.jpg"
+    "image": "../../src/assets/festival-banners/glastonbury.jpg"
   }
 ]

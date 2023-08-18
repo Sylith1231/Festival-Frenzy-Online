@@ -68,8 +68,10 @@ export default function level() {
     };
   }, [username, sessionID]);
 
+  console.log(levelData.image);
   return (
-    <div className='background-image level-container' style={{ backgroundImage: `url(${IsleOfWight})` }}>
+    // <div className='background-image level-container' style={{ backgroundImage: `url(${IsleOfWight})` }}>
+    <div className='background-image level-container' style={{ backgroundImage: `url(${levelData.image})` }}>
       <div style={{ backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '24px', rowGap: '32px' }}>
         <h1 style={{ color: 'white', fontSize: '40px' }}>
           <span style={{ color: 'gold' }}>{levelData.level}</span> {levelData.name}
