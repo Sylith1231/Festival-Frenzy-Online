@@ -11,6 +11,16 @@ import Die4 from '../assets/die/die4.png';
 import Die5 from '../assets/die/die5.png';
 import Die6 from '../assets/die/die6.png';
 
+import IsleOfWight from '../assets/festival-banners/isle-of-wight.jpeg';
+import Glastonbury from '../assets/festival-banners/glastonbury.jpg';
+import Lattitude from '../assets/festival-banners/lattitude.jpeg';
+import Womad from '../assets/festival-banners/womad.jpeg';
+import Sonisphere from '../assets/festival-banners/sonisphere.jpg';
+import BigChillFestivalfrom from '../assets/festival-banners/biggchillfestival.jpg';
+import BGG from '../assets/festival-banners/bgg.jpg';
+import VFestival from '../assets/festival-banners/vfestival.jpg';
+import Reading from '../assets/festival-banners/reading.jpg';
+
 import festivalData from '../data/FestivalData.json';
 import { Dispatch, SetStateAction, useContext, useEffect, useState } from 'react';
 import { UsernameContext } from '../context/UsernameContext';
@@ -34,6 +44,7 @@ export default function level() {
   const [orderSubmitted, setOrderSubmitted] = useState<boolean>(false);
   const [finalDieValues, setFinalDieValues] = useState<number[]>([-1, -1]);
   const levelData = festivalData[Math.floor(currentLevel / 2)];
+  const levelImages = [IsleOfWight, Glastonbury, Lattitude, Womad, Sonisphere, BigChillFestivalfrom, BGG, VFestival, Reading];
   const tempBalance = balance - welliesQty * levelData.prices.welliesCost - sunglassesQty * levelData.prices.sunglassesCost;
   const docRef = doc(firestore, 'sessions', sessionID);
 
@@ -69,7 +80,7 @@ export default function level() {
   console.log('welliesQty: ', welliesQty);
   return (
     // <div className='background-image level-container' style={{ backgroundImage: `url(${IsleOfWight})` }}>
-    <div className='background-image level-container' style={{ backgroundImage: `url(${levelData.image})` }}>
+    <div className='background-image level-container' style={{ backgroundImage: levelImages[currentLevel - 1] }}>
       <div style={{ backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '24px', rowGap: '32px' }}>
         <h1 style={{ color: 'white', fontSize: '40px' }}>
           <span style={{ color: 'gold' }}>{levelData.level}</span> {levelData.name}
