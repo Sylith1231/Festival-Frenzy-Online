@@ -39,7 +39,7 @@ const router = chooseRouter()(
       element: <WaitingRoom />,
       loader: waitingRoomLoader,
     },
-    { path: '/host/create-session', element: <CreateSession /> },
+    { path: '/create-session', element: <CreateSession /> },
     {
       path: '/host/:sessionID',
       element: <Host />,

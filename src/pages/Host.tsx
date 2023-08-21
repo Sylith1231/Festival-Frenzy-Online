@@ -97,7 +97,7 @@ export default function Host() {
             onClick={async () => {
               await setDoc(doc(firestore, 'sessions', sessionID), {
                 active: true,
-                code: '219797',
+                code: code,
                 currentLevel: 1,
               });
             }}
