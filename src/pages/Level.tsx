@@ -93,7 +93,10 @@ export default function level() {
             {orderSubmitted ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40px', width: '150px', textAlign: 'center', fontSize: '18pt' }}>{welliesQty}</div>
             ) : (
-              <input className='quantity-input' type='number' defaultValue={welliesQty} min={0} onChange={(e) => setWelliesQty(Number(e.target.value))} />
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', columnGap: '16px', color: 'lightslategray' }}>
+                <input className='quantity-input' type='number' defaultValue={welliesQty} min={0} onChange={(e) => setWelliesQty(Number(e.target.value))} />
+                <h3 style={{ width: '16px' }}>{Math.floor(tempBalance / levelData.prices.welliesCost) >= 0 ? Math.floor(tempBalance / levelData.prices.welliesCost) : 0}</h3>
+              </div>
             )}
           </div>
 
@@ -105,7 +108,10 @@ export default function level() {
             {orderSubmitted ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '40px', width: '150px', textAlign: 'center', fontSize: '18pt' }}>{sunglassesQty}</div>
             ) : (
-              <input className='quantity-input' type='number' defaultValue={sunglassesQty} min={0} onChange={(e) => setSunglassesQty(Number(e.target.value))} />
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', columnGap: '16px', color: 'lightslategray' }}>
+                <input className='quantity-input' type='number' defaultValue={sunglassesQty} min={0} onChange={(e) => setSunglassesQty(Number(e.target.value))} />
+                <h3 style={{ width: '16px' }}>{Math.floor(tempBalance / levelData.prices.sunglassesCost) >= 0 ? Math.floor(tempBalance / levelData.prices.sunglassesCost) : 0}</h3>
+              </div>
             )}
           </div>
         </div>
@@ -211,6 +217,8 @@ interface OrderButtonProps {
 
 function OrderButton({ docRef, levelID, username, startBalance, endBalance, welliesQty, sunglassesQty, orderSubmitted, setOrderSubmitted }: OrderButtonProps) {
   async function handleSubmitOrder(docRef: DocumentReference, levelID: number, username: string, startBalance: number, endBalance: number, welliesQty: number, sunglassesQty: number) {
+    if (endBalance < 0) return;
+
     const batch = writeBatch(firestore);
 
     batch.update(doc(docRef, 'players', username), {
