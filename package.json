@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://sylith1231.github.io/Festival-Frenzy-Online/",
   "scripts": {
     "dev": "vite",
     "predeploy": "npm run build",
