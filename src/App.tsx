@@ -1,4 +1,4 @@
-import { createHashRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, createHashRouter, redirect, RouterProvider } from 'react-router-dom';
 import { UsernameContextProvider } from './context/UsernameContext';
 import Landing from './pages/Landing';
 import WaitingRoom, { loader as waitingRoomLoader } from './pages/WaitingRoom';
@@ -7,24 +7,23 @@ import Level from './pages/Level';
 import Leaderboard from './pages/Leaderboard';
 import Test from './pages/Test';
 
-// function chooseRouter() {
-//   if (import.meta.env.DEV) {
-//     return createBrowserRouter;
-//   } else {
-//     return createHashRouter;
-//   }
-// }
+function chooseRouter() {
+  if (import.meta.env.DEV) {
+    return createBrowserRouter;
+  } else {
+    return createHashRouter;
+  }
+}
 
-// function authLoader() {
-//   const username = sessionStorage.getItem('username');
-//   if (!username) {
-//     return redirect('/');
-//   }
-//   return null;
-// }
+function authLoader() {
+  const username = sessionStorage.getItem('username');
+  if (!username) {
+    return redirect('/');
+  }
+  return null;
+}
 
-// const router = chooseRouter()(
-const router = createHashRouter(
+const router = chooseRouter()(
   [
     {
       path: '/',
@@ -46,17 +45,17 @@ const router = createHashRouter(
     {
       path: '/level/:sessionID/:levelID',
       element: <Level />,
-      // loader: authLoader,
+      loader: authLoader,
     },
     {
       path: '/leaderboard/:sessionID',
       element: <Leaderboard />,
-      // loader: authLoader,
+      loader: authLoader,
     },
-    // {
-    //   path: '/*',
-    //   loader: () => redirect('/'),
-    // },
+    {
+      path: '/*',
+      loader: () => redirect('/'),
+    },
   ],
   // { basename: import.meta.env.DEV ? '/' : '/Festival-Frenzy-Online/' },
 );
