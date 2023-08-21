@@ -11,6 +11,7 @@ export default function Host() {
   const [orderSubmitted, setOrderSubmitted] = useState<string[]>([]);
   const [dieRolls, setDieRolls] = useState<number[]>([-1, -1]);
   const levelData = festivalData[currentLevel - 1] as levelData;
+  const [code, setCode] = useState('');
   // const allOrdersSubmitted = users.sort().join(',') === orderSubmitted.sort().join(',');
 
   useEffect(() => {
@@ -20,6 +21,7 @@ export default function Host() {
       else {
         setUsers(data.users ?? []);
         setOrderSubmitted(data.orderSubmitted ?? []);
+        setCode(data.code);
       }
     });
     return () => unsubscribe();
@@ -90,16 +92,6 @@ export default function Host() {
           </button>
           <p>Click to update user's scores and navigate to leaderboard. Click again to navigate from leaderboard to next level.</p>
         </div>
-        {/* <button
-          onClick={async () => {
-            const currentLevel = await getDoc(doc(firestore, 'sessions', sessionID)).then((doc) => doc.data()?.currentLevel);
-            await updateDoc(doc(firestore, 'sessions', sessionID), {
-              currentLevel: currentLevel - 1,
-            });
-          }}
-        >
-          <h2>Previous level</h2>
-        </button> */}
         <div style={{ display: 'flex', columnGap: '18px' }}>
           <button
             onClick={async () => {
@@ -114,6 +106,7 @@ export default function Host() {
           </button>
           <p>Click this if you make a mistake. Afterwards, all users need to begin again from the landing page.</p>
         </div>
+        <h1>Code: {code}</h1>
       </div>
     </div>
   );

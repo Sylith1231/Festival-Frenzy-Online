@@ -6,6 +6,7 @@ import Host from './pages/Host';
 import Level from './pages/Level';
 import Leaderboard from './pages/Leaderboard';
 import Test from './pages/Test';
+import CreateSession from './pages/CreateSession';
 
 function chooseRouter() {
   if (import.meta.env.DEV) {
@@ -38,6 +39,7 @@ const router = chooseRouter()(
       element: <WaitingRoom />,
       loader: waitingRoomLoader,
     },
+    { path: '/host/create-session', element: <CreateSession /> },
     {
       path: '/host/:sessionID',
       element: <Host />,
