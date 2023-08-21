@@ -65,6 +65,7 @@ const router = chooseRouter()(
 console.log(import.meta.env.DEV);
 
 function App() {
+  // let preventComitUntilBaseChanged;
   return (
     <UsernameContextProvider>
       <RouterProvider router={router} />

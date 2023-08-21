@@ -47,7 +47,7 @@ export default function WaitingRoom() {
       }
 
       if (data?.gameStarted) {
-        navigate('/level/1/1');
+        navigate(`/level/${sessionID}}/1`);
       }
     });
     return () => unsubscribe();
