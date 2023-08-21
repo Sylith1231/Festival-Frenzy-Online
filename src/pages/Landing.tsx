@@ -40,7 +40,7 @@ function Input() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', rowGap: '18px' }}>
       <div id='input-container'>
-        <h3>Enter your session code below:</h3>
+        <h3>Enter your session code:</h3>
         <input className='input-field' onChange={(e) => setCode(e.target.value)} type='number' placeholder='' style={{ letterSpacing: 3 }} />
       </div>
 
