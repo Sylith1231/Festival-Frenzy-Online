@@ -61,6 +61,8 @@ const router = createHashRouter(
   { basename: import.meta.env.DEV ? '/' : '/Festival-Frenzy-Online/' },
 );
 
+console.log(import.meta.env.DEV);
+
 function App() {
   return (
     <UsernameContextProvider>
