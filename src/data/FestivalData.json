@@ -11,7 +11,7 @@
       "sellSunglassesBW": 1
     },
     "weather": [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
-    "image": "../../src/assets/festival-banners/isle-of-wight.jpeg"
+    "image": "./../../src/assets/festival-banners/isle-of-wight.jpeg"
   },
   {
     "level": 2,
