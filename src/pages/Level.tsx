@@ -20,6 +20,7 @@ import BigChillFestivalfrom from '../assets/festival-banners/biggchillfestival.j
 import BGG from '../assets/festival-banners/bgg.jpg';
 import VFestival from '../assets/festival-banners/vfestival.jpg';
 import Reading from '../assets/festival-banners/reading.jpg';
+import LandingBackground from '../assets/landing-background.jpeg';
 
 import festivalData from '../data/FestivalData.json';
 import { Dispatch, SetStateAction, useContext, useEffect, useState } from 'react';
@@ -80,7 +81,7 @@ export default function level() {
   console.log('welliesQty: ', welliesQty);
   return (
     // <div className='background-image level-container' style={{ backgroundImage: `url(${IsleOfWight})` }}>
-    <div className='background-image level-container' style={{ backgroundImage: levelImages[currentLevel - 1] }}>
+    <div className='background-image level-container' style={{ backgroundImage: `url(${levelImages[currentLevel - 1]})` }}>
       <div style={{ backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '24px', rowGap: '32px' }}>
         <h1 style={{ color: 'white', fontSize: '40px' }}>
           <span style={{ color: 'gold' }}>{levelData.level}</span> {levelData.name}
