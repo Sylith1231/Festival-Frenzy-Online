@@ -20,7 +20,6 @@ import BigChillFestivalfrom from '../assets/festival-banners/biggchillfestival.j
 import BGG from '../assets/festival-banners/bgg.jpg';
 import VFestival from '../assets/festival-banners/vfestival.jpg';
 import Reading from '../assets/festival-banners/reading.jpg';
-import LandingBackground from '../assets/landing-background.jpeg';
 
 import festivalData from '../data/FestivalData.json';
 import { Dispatch, SetStateAction, useContext, useEffect, useState } from 'react';
