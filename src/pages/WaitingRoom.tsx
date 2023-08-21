@@ -5,6 +5,7 @@ import { useContext, useEffect, useState } from 'react';
 import LandingBackground from '../assets/landing-background.jpeg';
 import JoinIcon from '../assets/join.png';
 import { UsernameContext } from '../context/UsernameContext.tsx';
+import { validateUsername } from '../utilities/validateUsername.ts';
 
 //TODO - strongly type this.
 export async function loader({ params }: any): Promise<string[]> {
@@ -56,6 +57,8 @@ export default function WaitingRoom() {
   //TODO - validate against existing usernames.
   //TODO - validate against empty string etc.
   async function handleAddPlayer(username: string) {
+    const validUsername = await validateUsername(username, sessionID);
+    if (!validUsername) return;
     const docRef = doc(firestore, 'sessions', sessionID);
     // setUserInGame(true);
     await updateDoc(docRef, { users: arrayUnion(username) });
