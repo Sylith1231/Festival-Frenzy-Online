@@ -12,6 +12,7 @@ export default function Host() {
   const [dieRolls, setDieRolls] = useState<number[]>([-1, -1]);
   const levelData = festivalData[currentLevel - 1] as levelData;
   const [code, setCode] = useState('');
+  const [activeButton, setActiveButton] = useState(1);
   // const allOrdersSubmitted = users.sort().join(',') === orderSubmitted.sort().join(',');
 
   useEffect(() => {
@@ -37,8 +38,9 @@ export default function Host() {
     });
     await batch.commit();
     await updateDoc(docRef, { gameStarted: true });
+    setActiveButton(2);
   }
-  console.log('currentLevel: ', currentLevel);
+
   return (
     <div>
       <h1 style={{ display: 'block' }}>Current Users</h1>
@@ -52,20 +54,23 @@ export default function Host() {
       </ol>
       <div style={{ display: 'flex', flexDirection: 'column', rowGap: '18px', marginLeft: '18px' }}>
         <div style={{ display: 'flex', columnGap: '18px' }}>
-          <button onClick={handleStartGame}>
+          <button onClick={handleStartGame} disabled={activeButton != 1 || users.length <= 0} style={{ cursor: 'pointer' }}>
             <h2>START GAME</h2>
           </button>
           <p>Click to navigate players to first round. Only players shown in 'Current Users' will be able to participate.</p>
         </div>
         <div style={{ display: 'flex', columnGap: '18px' }}>
           <button
-            onClick={() => {
+            onClick={async () => {
               const newDieRolls = [Math.floor(Math.random() * 6), Math.floor(Math.random() * 6)];
               setDieRolls(newDieRolls);
-              updateDoc(doc(firestore, 'sessions', sessionID), {
+              await updateDoc(doc(firestore, 'sessions', sessionID), {
                 [`dieValues.${currentLevel}`]: newDieRolls,
               });
+              setActiveButton(3);
             }}
+            style={{ cursor: 'pointer' }}
+            disabled={activeButton != 2 || orderSubmitted.length != users.length}
           >
             <h2>ROLL DICE!</h2>
           </button>
@@ -84,9 +89,13 @@ export default function Host() {
               // const currentLevel = await getDoc(doc(firestore, 'sessions', sessionID)).then((doc) => doc.data()?.currentLevel);
               await updateDoc(doc(firestore, 'sessions', sessionID), {
                 currentLevel: nextLevel,
+                orderSubmitted: [],
               });
               setCurrentLevel(nextLevel);
+              if (nextLevel > 0) setActiveButton(2);
             }}
+            disabled={activeButton != 3}
+            style={{ cursor: 'pointer' }}
           >
             <h2>Next level</h2>
           </button>
@@ -100,6 +109,7 @@ export default function Host() {
                 code: code,
                 currentLevel: 1,
               });
+              setActiveButton(1);
             }}
           >
             <h2>Restart game.</h2>

@@ -43,7 +43,7 @@ export default function level() {
   // const [currentLevel, setCurrentLevel] = useState(0);
   const [orderSubmitted, setOrderSubmitted] = useState<boolean>(false);
   const [finalDieValues, setFinalDieValues] = useState<number[]>([-1, -1]);
-  const levelData = festivalData[Math.floor(currentLevel / 2)];
+  const levelData = festivalData[currentLevel - 1];
   const levelImages = [IsleOfWight, Glastonbury, Lattitude, Womad, Sonisphere, BigChillFestivalfrom, BGG, VFestival, Reading];
   const tempBalance = balance - welliesQty * levelData.prices.welliesCost - sunglassesQty * levelData.prices.sunglassesCost;
   const docRef = doc(firestore, 'sessions', sessionID);
@@ -77,7 +77,6 @@ export default function level() {
     };
   }, [username, sessionID]);
 
-  console.log('welliesQty: ', welliesQty);
   return (
     // <div className='background-image level-container' style={{ backgroundImage: `url(${IsleOfWight})` }}>
     <div className='background-image level-container' style={{ backgroundImage: `url(${levelImages[currentLevel - 1]})` }}>
