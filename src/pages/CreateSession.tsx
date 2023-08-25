@@ -11,7 +11,11 @@ export default function CreateSession() {
     const docRef = await addDoc(colRef, {
       active: true,
       code: code,
-      currentLevel: 1,
+      currentLevel: 0,
+      users: [],
+      allowNewUsers: true,
+      dieValues: {},
+      gameStarted: false,
     });
     navigate(`/host/${docRef.id}`);
   }

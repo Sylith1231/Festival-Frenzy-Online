@@ -1,4 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Lilita+One&family=Sigmar&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 h1,
 h2,
@@ -329,4 +332,9 @@ body,
 .leaderboard_heading img {
   width: 60px;
   padding: 20px;
+}
+
+.remove-player-icon:hover {
+  fill: #e0e0e0;
+  /* fill: '#F44336'; */
 }

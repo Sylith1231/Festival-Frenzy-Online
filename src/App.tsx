@@ -7,6 +7,7 @@ import Level from './pages/Level';
 import Leaderboard from './pages/Leaderboard';
 import Test from './pages/Test';
 import CreateSession from './pages/CreateSession';
+import NewHost from './pages/NewHost';
 
 function chooseRouter() {
   if (import.meta.env.DEV) {
@@ -45,6 +46,10 @@ const router = chooseRouter()(
       element: <Host />,
     },
     {
+      path: '/newHost/:sessionID',
+      element: <NewHost />,
+    },
+    {
       path: '/level/:sessionID/:levelID',
       element: <Level />,
       loader: authLoader,
@@ -65,7 +70,7 @@ const router = chooseRouter()(
 console.log(import.meta.env.DEV);
 
 function App() {
-  // let preventComitUntilBaseChanged;
+  let preventComitUntilBaseChanged;
   return (
     <UsernameContextProvider>
       <RouterProvider router={router} />

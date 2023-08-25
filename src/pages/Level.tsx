@@ -232,7 +232,7 @@ function OrderButton({ docRef, levelID, username, startBalance, endBalance, well
     });
 
     batch.update(docRef, {
-      orderSubmitted: arrayUnion(username),
+      ordersSubmitted: arrayUnion(username),
     });
 
     setOrderSubmitted(true);
@@ -253,7 +253,7 @@ function OrderButton({ docRef, levelID, username, startBalance, endBalance, well
     });
 
     batch.update(docRef, {
-      orderSubmitted: arrayRemove(username),
+      ordersSubmitted: arrayRemove(username),
     });
 
     await batch.commit();
