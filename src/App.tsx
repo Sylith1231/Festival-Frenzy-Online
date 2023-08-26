@@ -2,7 +2,7 @@ import { createBrowserRouter, createHashRouter, redirect, RouterProvider } from 
 import { UsernameContextProvider } from './context/UsernameContext';
 import Landing from './pages/Landing';
 import WaitingRoom, { loader as waitingRoomLoader } from './pages/WaitingRoom';
-import Host from './pages/DeprecatedHost';
+import Host from './pages/Host';
 import Level from './pages/Level';
 import Leaderboard from './pages/Leaderboard';
 import Test from './pages/Test';
