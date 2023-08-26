@@ -9,7 +9,6 @@ export default function CreateSession() {
     const code = await getValidCode();
     const colRef = collection(firestore, 'sessions');
     const docRef = await addDoc(colRef, {
-      active: true,
       code: code,
       currentLevel: 0,
       users: [],

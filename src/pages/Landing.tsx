@@ -54,7 +54,7 @@ function Input() {
 async function validateCode(code: string): Promise<string | null> {
   try {
     const sessionsRef = collection(firestore, 'sessions');
-    const q = query(sessionsRef, where('active', '==', true), where('code', '==', code));
+    const q = query(sessionsRef, where('allowNewUsers', '==', true), where('code', '==', code));
     const querySnapshot = await getDocs(q);
     //Check if there is a session with the given code
     if (querySnapshot.empty) {

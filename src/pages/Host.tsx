@@ -1,128 +1,520 @@
+//TODO
+/*
+  -Name changes after game started.
+  -Dealing with player removal properly on backend.
+  -Dealing with players joining after game started.
+  -Ensure allow new users switch works properly.
+*/
+
+import Sun from '../assets/sun.png';
+import Rain from '../assets/rain.jpeg';
+import { arrayRemove, arrayUnion, collection, doc, getDocs, onSnapshot, query, updateDoc, where, writeBatch } from 'firebase/firestore';
+import { useEffect, useRef, useState } from 'react';
+import { firestore } from '../firebase';
 import { useParams } from 'react-router-dom';
-import { firestore } from '../firebase.ts';
-import { useEffect, useState } from 'react';
-import { collection, doc, getDocs, onSnapshot, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { MdCasino, MdClose, MdDone, MdEditSquare, MdNavigateNext, MdPersonRemove, MdRocketLaunch } from 'react-icons/md';
+import { IconContext } from 'react-icons';
 import festivalData from '../data/FestivalData.json';
+import Switch from 'react-switch';
+import { calculateWeatherProbability } from '../utilities/calculateWeatherProbability';
+import { FaDiceOne, FaDiceTwo, FaDiceThree, FaDiceFour, FaDiceFive, FaDiceSix } from 'react-icons/fa';
 
 export default function Host() {
+  const [users, setUsers] = useState<string[] | null>(null);
+
+  //Consider changing to <boolean|null> (think about loading component if any state is null).
+  const [allowNewUsers, setAllowNewUsers] = useState<boolean>(true);
+  const [currentLevel, setCurrentLevel] = useState<number | null>(null);
+  const [ordersSubmitted, setOrdersSubmitted] = useState<string[] | null>(null);
+  const [activeButton, setActiveButton] = useState<number>(0);
+  const [code, setCode] = useState<string | null>(null);
+  const [removePlayer, setRemovePlayer] = useState<string | null>(null);
+  const [showInputDiceModal, setShowInputDiceModal] = useState<boolean>(false);
+  const levelData = currentLevel ? (festivalData[currentLevel - 1] as levelData) : null;
+  //TODO deal with sessionID not being defined.
   const sessionID = useParams().sessionID ?? '';
-  const [users, setUsers] = useState<string[]>([]);
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [orderSubmitted, setOrderSubmitted] = useState<string[]>([]);
-  const [dieRolls, setDieRolls] = useState<number[]>([-1, -1]);
-  const levelData = festivalData[currentLevel - 1] as levelData;
-  const [code, setCode] = useState('');
-  const [activeButton, setActiveButton] = useState(1);
-  // const allOrdersSubmitted = users.sort().join(',') === orderSubmitted.sort().join(',');
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(doc(firestore, 'sessions', sessionID), (doc) => {
+    const docRef = doc(firestore, 'sessions', sessionID);
+    //TODO look into whether I shouould be performing all these updates in the same onSnapshot?
+    //I.e. should I be using a different listener for each piece of state? StackOverflow.
+    const unsubscribe = onSnapshot(docRef, (doc) => {
       const data = doc.data();
-      if (!data) console.log('error');
-      else {
-        setUsers(data.users ?? []);
-        setOrderSubmitted(data.orderSubmitted ?? []);
-        setCode(data.code);
+      if (data) {
+        setUsers(data.users ?? null);
+        setAllowNewUsers(data.allowNewUsers ?? null);
+        setCurrentLevel(data.currentLevel ?? null);
+        setOrdersSubmitted(data.ordersSubmitted ?? null);
+        setCode(data.code ?? null);
+        if (data.gameStarted == false) {
+          setActiveButton(1);
+        } else {
+          if (data.dieValues[data.currentLevel] || data.currentLevel < 0) {
+            setActiveButton(3);
+          } else {
+            setActiveButton(2);
+          }
+        }
+      } else {
+        //TODO deal with error.
       }
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   async function handleStartGame() {
     const docRef = doc(firestore, 'sessions', sessionID);
     const batch = writeBatch(firestore);
-    //add all users to the game
-    users.forEach((user) => {
-      const docRef = doc(firestore, 'sessions', sessionID, 'players', user);
-      batch.set(docRef, { balance: 100, orders: {} });
+    users?.forEach((user) => {
+      batch.set(doc(docRef, 'players', user), { balance: 100, orders: {} });
+    });
+    batch.update(docRef, { gameStarted: true, currentLevel: 1, allowNewUsers: false, ordersSubmitted: [] });
+    await batch
+      .commit()
+      .then(() => {
+        setActiveButton(2);
+      })
+      .catch((error) => {
+        console.log('error🤪: ', error);
+      });
+  }
+
+  async function autofillOrders() {
+    const orderNotSubmitted = users?.filter((user) => !ordersSubmitted?.includes(user));
+    if (orderNotSubmitted?.length == 0) return;
+    const colRef = collection(firestore, 'sessions', sessionID, 'players');
+    //TODO ask if this is okay and for more info on stack overflow.
+    const q = query(colRef, where('__name__', 'in', orderNotSubmitted));
+    const querySnapshot = await getDocs(q);
+    const batch = writeBatch(firestore);
+    querySnapshot.forEach((doc) => {
+      const balance = doc.data().balance;
+      console.log(doc.id);
+      batch.update(doc.ref, {
+        [`orders.${currentLevel}`]: {
+          startBalance: balance,
+          endBalance: balance,
+          ordersSubmitted: true,
+          welliesQty: 0,
+          sunglassesQty: 0,
+        },
+      });
     });
     await batch.commit();
-    await updateDoc(docRef, { gameStarted: true });
-    setActiveButton(2);
+  }
+  async function handleRollDice() {
+    const diceRolls = [Math.floor(Math.random() * 6), Math.floor(Math.random() * 6)];
+
+    await autofillOrders();
+
+    await updateBalances(diceRolls)
+      .then(() => {
+        setActiveButton(3);
+      })
+      .catch((error) => {
+        console.log('error🤯: ', error);
+      });
+  }
+
+  async function handleNext() {
+    const nextLevel = currentLevel! > 0 ? -currentLevel! : -(currentLevel! - 1);
+    const docRef = doc(firestore, 'sessions', sessionID);
+    await updateDoc(docRef, { currentLevel: nextLevel, ordersSubmitted: [] });
+  }
+
+  async function updateBalances(diceRolls: number[]) {
+    const batch = writeBatch(firestore);
+    batch.update(doc(firestore, 'sessions', sessionID), {
+      [`dieValues.${currentLevel}`]: diceRolls,
+    });
+    const snapshot = await getDocs(collection(firestore, 'sessions', sessionID, 'players'));
+    const goodWeather = levelData?.weather[diceRolls[0] + diceRolls[1]] == 1;
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const balance = data.balance;
+      const order = data.orders[currentLevel!];
+      if (goodWeather) {
+        batch.update(doc.ref, {
+          balance: balance + order.welliesQty * levelData.prices.sellWelliesGW + order.sunglassesQty * levelData.prices.sellSunglassesGW,
+        });
+      } else {
+        batch.update(doc.ref, {
+          balance: balance + order.welliesQty * levelData!.prices.sellWelliesBW + order.sunglassesQty * levelData!.prices.sellSunglassesBW,
+        });
+      }
+    });
+    await batch.commit();
+  }
+
+  //TODO Implement checks for whether state is null, and implement loading either for subcomponents or entire page.
+  return (
+    /* Grey background div */
+    <>
+      <div className='flex items-center justify-center h-full w-full bg-gray-100'>
+        <div className='flex gap-x-4'>
+          {/* Players / Leaderboard Section */}
+          <div className='bg-white rounded-xl p-4'>
+            <p className='m-0 text-2xl text-gray-800 font-bold'>Players</p>
+            <ul className='h-full list-none p-0'>{users ? users.sort().map((user) => <PlayerEntry key={user} username={user} sessionID={sessionID} orderSubmitted={currentLevel! <= 0 ? null : ordersSubmitted?.includes(user)} setRemovePlayer={setRemovePlayer} />) : 'TODO ERROR'}</ul>
+          </div>
+          {/* Session Data / Festival Data */}
+          <div className='flex flex-col gap-y-4'>
+            <div className='flex gap-x-4'>
+              {/* Session Data */}
+              <div className='flex-none flex flex-col w-fit h-fit gap-y-3 bg-white p-4 px-4 rounded-xl'>
+                <p className='m-0 text-2xl text-gray-800 font-bold'>Session ({sessionID})</p>
+                <div className='flex items-center'>
+                  <p className='m-0 text-md italic'>
+                    Code: <span className='underline text-sky-500'>{code}</span>
+                  </p>
+                  <div className='mx-2 border border-solid border-transparent border-l-gray-300 h-4' />
+                  <p className='m-0 italic text-md'>{users?.length ?? 0} players</p>
+                  <div className='mx-2 border border-solid border-transparent border-l-gray-300 h-4' />
+                  <p className={`m-0 italic text-md ${currentLevel == 0 ? 'text-red-500' : 'text-[#4CAF50]'}`}>{currentLevel == 0 ? 'waiting room' : 'in progress'}</p>
+                </div>
+                <div className='mt-2 flex items-center gap-x-2'>
+                  <p className='m-0 text-md'>Allow players to join: </p>
+                  <Switch checked={allowNewUsers} onChange={async (checked) => updateDoc(doc(firestore, 'sessions', sessionID), { allowNewUsers: checked })} onColor='#38bdf8' offColor='#ef4444' activeBoxShadow='' height={28 * 0.8} width={56 * 1 * 0.8} handleDiameter={24 * 0.8} />
+                </div>
+              </div>
+              {/* Buttons */}
+              <div className='flex w-full gap-x-2'>
+                <div className='w-full flex flex-col gap-y-2'>
+                  <button onClick={handleStartGame} disabled={activeButton != 1} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#4CAF50] cursor-pointer disabled:cursor-default  bg-white hover:bg-[#E8F5E9] rounded-lg h-full`}>
+                    <p className={`${activeButton != 1 && 'text-gray-300'} m-0 font-bold text-lg text-[#4CAF50]`}>Start Game</p>
+                    <IconContext.Provider value={{ color: `${activeButton != 1 ? '#D1D5DB' : '#4CAF50'}`, size: '2em' }}>
+                      <MdRocketLaunch />
+                    </IconContext.Provider>
+                  </button>
+                  <button onClick={handleNext} disabled={activeButton != 3} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#03A9F4] cursor-pointer disabled:cursor-default bg-white hover:bg-[#E1F5FE] rounded-lg h-full`}>
+                    <p className={`${activeButton != 3 && 'text-gray-300'} m-0 font-bold text-lg text-[#03A9F4]`}>Next</p>
+                    <IconContext.Provider value={{ color: `${activeButton != 3 ? '#D1D5DB' : '#03A9F4'}`, size: '2em' }}>
+                      <MdNavigateNext />
+                    </IconContext.Provider>
+                  </button>
+                </div>
+                <div className='w-full flex flex-col gap-y-2'>
+                  <button onClick={handleRollDice} disabled={activeButton != 2} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#EF5350] cursor-pointer disabled:cursor-default bg-white hover:bg-[#FFEBEE] rounded-lg h-full`}>
+                    <p className={`${activeButton != 2 && 'text-gray-300'} m-0 font-bold text-lg text-[#EF5350]`}>Roll Dice</p>
+                    <IconContext.Provider value={{ color: `${activeButton != 2 ? '#D1D5DB' : '#EF5350'}`, size: '2em' }}>
+                      <MdCasino />
+                    </IconContext.Provider>
+                  </button>
+                  <button onClick={() => setShowInputDiceModal(true)} disabled={activeButton != 2} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#EF5350] cursor-pointer disabled:cursor-default bg-white hover:bg-[#FFEBEE] rounded-lg h-full`}>
+                    <p className={`${activeButton != 2 && 'text-gray-300'} m-0 font-bold text-lg text-[#EF5350]`}>Input Dice</p>
+                    <IconContext.Provider value={{ color: `${activeButton != 2 ? '#D1D5DB' : '#EF5350'}`, size: '2em' }}>
+                      <MdEditSquare />
+                    </IconContext.Provider>
+                  </button>
+                </div>
+              </div>
+            </div>
+            {/* Festival Data */}
+            <div className='h-fit rounded-xl p-4 bg-white flex flex-col gap-y-8'>
+              <p className='m-0 text-2xl text-gray-800 font-bold'>Festival Data</p>
+              <Forecast weather={levelData ? levelData.weather : []} />
+              {/* Weather probability */}
+              <div className='w-full h-[60px] flex'>
+                {/*-----------------------------------------------------------------------------------------------------------------------------------------------------> I think fix bugs here by conditionally having two w-[] classes rather than just conditionally changing the contents of the square brackets in one w-[] */}
+                <div className={`px-2 border-2 border-r-[1px] border-r-sky-600 border-solid border-sky-600 gap-x-4 py-2 flex items-center justify-center bg-sky-400 ${'w-[' + calculateWeatherProbability(levelData ? levelData.weather : [])[0] + ']'} rounded-l-lg`}>
+                  <p className='text-sun text-4xl font-bold'>{calculateWeatherProbability(levelData ? levelData.weather : [])[0]}</p>
+                  <img src={Sun} className='h-full' />
+                </div>
+                <div className='px-2 border-2 border-l-[1px] border-l-gray-600 border-solid border-gray-600 gap-x-4 py-2 flex items-center justify-center bg-gray-400 flex-grow rounded-r-lg'>
+                  <p className='text-white text-4xl font-bold'>{calculateWeatherProbability(levelData ? levelData.weather : [])[1]}</p>
+                  <img src={Rain} className='h-full' />
+                </div>
+              </div>
+              {/* Price table */}
+              <div className='flex bg-gray-100 rounded-lg border-2 border-solid border-gray-300'>
+                <table className='flex-grow rounded-lg border-collapse border-spacing-0 p-0 m-0 text-center table-fixed'>
+                  <thead className='rounded-xl bg-gray-100'>
+                    <tr>
+                      <th className='border border-solid border-transparent border-b-gray-300 border-r-gray-300 rounded-tl-lg' />
+                      <th className='border border-solid border-transparent border-b-gray-300 border-r-gray-300  text-lg text-gray-800'>Cost</th>
+                      <th className='border border-solid border-transparent border-b-gray-300 border-r-gray-300 text-lg text-gray-800'>Sale GW</th>
+                      <th className='border border-solid border-transparent border-b-gray-300 text-lg text-gray-800 rounded-tr-lg'>Sale BW</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className='border border-solid border-transparent border-b-gray-300 border-r-gray-300 text-lg font-bold text-gray-800 bg-gray-100'>Wellies</td>
+                      <td className='border border-solid border-transparent border-b-gray-300 border-r-gray-300 bg-white'>£{levelData?.prices.welliesCost}</td>
+                      <td className='border border-solid border-transparent border-b-gray-300 border-r-gray-300 bg-white'>£{levelData?.prices.sellWelliesGW}</td>
+                      <td className='border border-solid border-transparent border-b-gray-300 bg-white'>£{levelData?.prices.sellWelliesBW}</td>
+                    </tr>
+                    <tr>
+                      <td className='px-4 text-lg font-bold text-gray-800 bg-gray-100 border border-solid border-transparent border-r-gray-300 rounded-bl-lg'>Sunglasses</td>
+                      <td className='w-1/3 bg-white border border-solid border-transparent border-r-gray-300'>£{levelData?.prices.sunglassesCost}</td>
+                      <td className='w-1/3 bg-white border border-solid border-transparent border-r-gray-300'>£{levelData?.prices.sellSunglassesGW}</td>
+                      <td className='w-1/3 bg-white rounded-br-lg'>£{levelData?.prices.sellSunglassesBW}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <RemovePlayerModal removePlayer={removePlayer} setRemovePlayer={setRemovePlayer} sessionID={sessionID} />
+      {showInputDiceModal && <InputDiceModal autofillOrders={autofillOrders} updateBalances={updateBalances} setActiveButton={setActiveButton} setShowInputDiceModal={setShowInputDiceModal} />}
+    </>
+  );
+}
+
+type PlayerEntryProps = {
+  username: string;
+  sessionID: string;
+  orderSubmitted?: boolean | null;
+  setRemovePlayer: React.Dispatch<React.SetStateAction<string | null>>;
+};
+
+function PlayerEntry({ username, sessionID, orderSubmitted, setRemovePlayer }: PlayerEntryProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleOnKeyUp(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      if (inputRef.current && inputRef.current?.value !== username) {
+        const docRef = doc(firestore, 'sessions', sessionID);
+        const newUsername = inputRef.current.value;
+        const batch = writeBatch(firestore);
+        batch.update(docRef, { users: arrayUnion(newUsername) });
+        batch.update(docRef, { users: arrayRemove(username) });
+        await batch.commit();
+      }
+    }
+  }
+  async function handleOnKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Tab') {
+      if (inputRef.current && inputRef.current?.value !== username) {
+        const docRef = doc(firestore, 'sessions', sessionID);
+        const newUsername = inputRef.current.value;
+        const batch = writeBatch(firestore);
+        batch.update(docRef, { users: arrayUnion(newUsername) });
+        batch.update(docRef, { users: arrayRemove(username) });
+        await batch.commit();
+      }
+    }
+  }
+
+  function handleOnBlur() {
+    if (inputRef.current && inputRef.current?.value !== username) {
+      inputRef.current.value = username;
+    }
   }
 
   return (
-    <div>
-      <h1 style={{ display: 'block' }}>Current Users</h1>
-      <h5 style={{ display: 'block' }}>Red font = order not submitted. Green = order submitted.</h5>
-      <ol>
-        {users.map((user) => (
-          <li key={user} style={{ color: orderSubmitted.includes(user) ? 'green' : 'red' }}>
-            {user}
-          </li>
-        ))}
-      </ol>
-      <div style={{ display: 'flex', flexDirection: 'column', rowGap: '18px', marginLeft: '18px' }}>
-        <div style={{ display: 'flex', columnGap: '18px' }}>
-          <button onClick={handleStartGame} disabled={activeButton != 1 || users.length <= 0} style={{ cursor: 'pointer' }}>
-            <h2>START GAME</h2>
-          </button>
-          <p>Click to navigate players to first round. Only players shown in 'Current Users' will be able to participate.</p>
+    <li className='flex items-center justify-center gap-x-2 mb-1'>
+      {/* Disable input when game started */}
+      <input ref={inputRef} onKeyDown={handleOnKeyDown} onKeyUp={handleOnKeyUp} onBlur={handleOnBlur} defaultValue={username} type='text' className={`text-center rounded border-2 border-solid ${orderSubmitted === null && 'border-gray-300'} ${orderSubmitted !== null && (orderSubmitted ? 'border-[#4CAF50]' : 'border-red-500')} px-6 py-0.5 w-20 text-base m-0`} />
+      <button onClick={() => setRemovePlayer(username)} className='outline-none inline-block bg-transparent border-none p-0 cursor-pointer'>
+        <IconContext.Provider value={{ color: '#F5F5F5', size: '1.8em', className: 'remove-player-icon' }}>
+          <MdPersonRemove />
+        </IconContext.Provider>
+      </button>
+    </li>
+  );
+}
+
+type InputDiceModalProps = {
+  autofillOrders: () => Promise<void>;
+  updateBalances: (diceRolls: number[]) => Promise<void>;
+  setActiveButton: React.Dispatch<React.SetStateAction<number>>;
+  setShowInputDiceModal: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+function InputDiceModal({ autofillOrders, updateBalances, setActiveButton, setShowInputDiceModal }: InputDiceModalProps) {
+  const [die1, setDie1] = useState<number | null>(null);
+  const [die2, setDie2] = useState<number | null>(null);
+
+  async function handleSubmitDice() {
+    const diceRolls = [die1! - 1, die2! - 1];
+    await autofillOrders();
+    await updateBalances(diceRolls)
+      .then(() => {
+        setActiveButton(3);
+      })
+      .then(() => {
+        setShowInputDiceModal(false);
+      })
+      .catch((error) => {
+        console.log('error🤯: ', error);
+      });
+  }
+
+  return (
+    <div className='flex items-center justify-center fixed inset-0 bg-black bg-opacity-80'>
+      <div className='bg-white rounded-lg p-4 flex flex-col justify-center items-center'>
+        <div className='flex mb-4'>
+          {/* First Die Selector */}
+          <div className='flex flex-col items-center justify-center'>
+            <p className='m-0 mb-4 text-xl'>Die 1</p>
+            <div className='flex'>
+              {/* Die 1 Column 1 */}
+              <div className='flex flex-col'>
+                <button onClick={() => setDie1(1)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die1 == 1 ? '#ef5350' : '#E0E0E0', size: die1 == 1 ? '4.5em' : '4em', className: die1 == 1 ? '' : 'dice-icon' }}>
+                    <FaDiceOne />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie1(3)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die1 == 3 ? '#ef5350' : '#E0E0E0', size: die1 == 3 ? '4.5em' : '4em', className: die1 == 3 ? '' : 'dice-icon' }}>
+                    <FaDiceThree />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie1(5)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die1 == 5 ? '#ef5350' : '#E0E0E0', size: die1 == 5 ? '4.5em' : '4em', className: die1 == 5 ? '' : 'dice-icon' }}>
+                    <FaDiceFive />
+                  </IconContext.Provider>
+                </button>
+              </div>
+
+              {/* Die 1 Column 2 */}
+              <div className='flex flex-col items-center justify-center'>
+                <button onClick={() => setDie1(2)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die1 == 2 ? '#ef5350' : '#E0E0E0', size: die1 == 2 ? '4.5em' : '4em', className: die1 == 2 ? '' : 'dice-icon' }}>
+                    <FaDiceTwo />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie1(4)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die1 == 4 ? '#ef5350' : '#E0E0E0', size: die1 == 4 ? '4.5em' : '4em', className: die1 == 4 ? '' : 'dice-icon' }}>
+                    <FaDiceFour />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie1(6)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die1 == 6 ? '#ef5350' : '#E0E0E0', size: die1 == 6 ? '4.5em' : '4em', className: die1 == 6 ? '' : 'dice-icon' }}>
+                    <FaDiceSix />
+                  </IconContext.Provider>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className='mx-4 border-[0.5px] border-solid border-gray-300'></div>
+
+          {/* Second Die Selector */}
+          <div className='flex flex-col items-center justify-center'>
+            <p className='m-0 text-xl mb-4'>Die 2</p>
+
+            <div className='flex'>
+              {/* Die 2 Column 1 */}
+              <div className='flex flex-col'>
+                <button onClick={() => setDie2(1)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die2 == 1 ? '#ef5350' : '#E0E0E0', size: die2 == 1 ? '4.5em' : '4em', className: die2 == 1 ? '' : 'dice-icon' }}>
+                    <FaDiceOne />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie2(3)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die2 == 3 ? '#ef5350' : '#E0E0E0', size: die2 == 3 ? '4.5em' : '4em', className: die2 == 3 ? '' : 'dice-icon' }}>
+                    <FaDiceThree />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie2(5)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die2 == 5 ? '#ef5350' : '#E0E0E0', size: die2 == 5 ? '4.5em' : '4em', className: die2 == 5 ? '' : 'dice-icon' }}>
+                    <FaDiceFive />
+                  </IconContext.Provider>
+                </button>
+              </div>
+
+              {/* Die 2 Column 2 */}
+              <div className='flex flex-col'>
+                <button onClick={() => setDie2(2)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die2 == 2 ? '#ef5350' : '#E0E0E0', size: die2 == 2 ? '4.5em' : '4em', className: die2 == 2 ? '' : 'dice-icon' }}>
+                    <FaDiceTwo />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie2(4)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die2 == 4 ? '#ef5350' : '#E0E0E0', size: die2 == 4 ? '4.5em' : '4em', className: die2 == 4 ? '' : 'dice-icon' }}>
+                    <FaDiceFour />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie2(6)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die2 == 6 ? '#ef5350' : '#E0E0E0', size: die2 == 6 ? '4.5em' : '4em', className: die2 == 6 ? '' : 'dice-icon' }}>
+                    <FaDiceSix />
+                  </IconContext.Provider>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div style={{ display: 'flex', columnGap: '18px' }}>
-          <button
-            onClick={async () => {
-              const newDieRolls = [Math.floor(Math.random() * 6), Math.floor(Math.random() * 6)];
-              setDieRolls(newDieRolls);
-              await updateDoc(doc(firestore, 'sessions', sessionID), {
-                [`dieValues.${currentLevel}`]: newDieRolls,
-              });
-              setActiveButton(3);
-            }}
-            style={{ cursor: 'pointer' }}
-            disabled={activeButton != 2 || orderSubmitted.length != users.length}
-          >
-            <h2>ROLL DICE!</h2>
+        <div className='flex flex-col w-full justify-around gap-y-2'>
+          <button onClick={() => setShowInputDiceModal(false)} className='bg-white hover:bg-[#FFEBEE] border-2 border-solid border-gray-300 hover:border-[#EF5350] cursor-pointer rounded-md py-2 w-full text-base'>
+            Cancel
           </button>
-          <p>Click to start dice roll animation on user's screens.</p>
-        </div>
-        <div style={{ display: 'flex', columnGap: '18px' }}>
-          <button
-            onClick={async () => {
-              let nextLevel;
-              if (currentLevel > 0) {
-                await updateScores(sessionID, levelData, dieRolls, currentLevel);
-                nextLevel = -currentLevel;
-              } else {
-                nextLevel = -(currentLevel - 1);
-              }
-              // const currentLevel = await getDoc(doc(firestore, 'sessions', sessionID)).then((doc) => doc.data()?.currentLevel);
-              await updateDoc(doc(firestore, 'sessions', sessionID), {
-                currentLevel: nextLevel,
-                orderSubmitted: [],
-              });
-              setCurrentLevel(nextLevel);
-              if (nextLevel > 0) setActiveButton(2);
-            }}
-            disabled={activeButton != 3}
-            style={{ cursor: 'pointer' }}
-          >
-            <h2>Next level</h2>
+          <button onClick={handleSubmitDice} className={`${die1 && die2 ? 'bg-white' : 'bg-gray-50'} ${die1 && die2 && 'hover:bg-[#E8F5E9]'} border-2 border-solid border-gray-300 ${die1 && die2 ? 'hover:border-[#66BB6A] cursor-pointer' : 'text-gray-200'} rounded-md py-2 w-full text-base`}>
+            Submit
           </button>
-          <p>Click to update user's scores and navigate to leaderboard. Click again to navigate from leaderboard to next level.</p>
         </div>
-        <div style={{ display: 'flex', columnGap: '18px' }}>
-          <button
-            onClick={async () => {
-              await setDoc(doc(firestore, 'sessions', sessionID), {
-                active: true,
-                code: code,
-                currentLevel: 1,
-              });
-              setActiveButton(1);
-            }}
-          >
-            <h2>Restart game.</h2>
-          </button>
-          <p>Click this if you make a mistake. Afterwards, all users need to begin again from the landing page.</p>
-        </div>
-        <h1>Code: {code}</h1>
       </div>
     </div>
   );
 }
 
-interface levelData {
+type RemovePlayerModalProps = {
+  removePlayer: string | null;
+  sessionID: string;
+  setRemovePlayer: React.Dispatch<React.SetStateAction<string | null>>;
+};
+
+function RemovePlayerModal({ removePlayer, sessionID, setRemovePlayer }: RemovePlayerModalProps) {
+  if (removePlayer == null) return null;
+
+  async function handleRemovePlayer(username: string) {
+    const docRef = doc(firestore, 'sessions', sessionID);
+    await updateDoc(docRef, {
+      users: arrayRemove(username),
+    });
+    setRemovePlayer(null);
+  }
+
+  return (
+    <div className='z-50 fixed flex items-center justify-center inset-0 bg-black bg-opacity-80'>
+      <div className='flex flex-col items-center gap-y-4 bg-white rounded-lg p-4'>
+        <p className='text-lg m-0'>
+          Remove <span className='underline font-bold'>{removePlayer}</span> from the session?
+        </p>
+        <div className='flex gap-x-2'>
+          <button onClick={() => setRemovePlayer(null)} className='cursor-pointer w-[150px] bg-[#FFEBEE] border-2 border-solid border-gray-200 hover:border-[#EF5350] rounded'>
+            <IconContext.Provider value={{ color: '#EF5350', size: '2.5em' }}>
+              <MdClose />
+            </IconContext.Provider>
+          </button>
+          <button onClick={() => handleRemovePlayer(removePlayer)} className='cursor-pointer w-[150px] bg-[#E8F5E9] border-2 border-solid border-gray-200 hover:border-[#4CAF50] rounded'>
+            <IconContext.Provider value={{ color: '#4CAF50', size: '2.5em' }}>
+              <MdDone />
+            </IconContext.Provider>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function Forecast({ weather }: { weather: number[] }) {
+  const forecast_tiles = [];
+  for (let i = 0; i < 11; i++) {
+    forecast_tiles.push(<ForecastTile index={i + 2} weather={weather[i]} key={`${i}`} />);
+  }
+
+  return <div className='flex gap-x-[8px] justify-center w-fit'>{forecast_tiles}</div>;
+}
+
+function ForecastTile({ index, weather }: { index: number; weather: number }) {
+  return (
+    <div className='flex flex-col text-gray-8-- items-center justify-center gap-x-[8px]'>
+      <h3>{index}</h3>
+      <div className='flex items-center justify-center bg-white border-2 border-solid border-sky-500 rounded-[5px] p-[8px]'>
+        <img className='w-[50px]' src={weather ? Sun : Rain} />
+      </div>
+    </div>
+  );
+}
+
+type levelData = {
   level: number;
   name: string;
   prices: {
@@ -135,29 +527,4 @@ interface levelData {
   };
   weather: (0 | 1)[];
   image: string;
-}
-
-async function updateScores(sessionID: string, levelData: levelData, dieRolls: number[], currentLevel: number) {
-  const batch = writeBatch(firestore);
-  const colRef = collection(firestore, 'sessions', sessionID, 'players');
-  const snapshot = await getDocs(colRef);
-  snapshot.forEach((doc) => {
-    let welliesSellPrice, sunglassesSellPrice;
-    const docRef = doc.ref;
-    const data = doc.data();
-    if (levelData.weather[dieRolls[0] + dieRolls[1]] == 0) {
-      welliesSellPrice = levelData.prices.sellWelliesBW;
-      sunglassesSellPrice = levelData.prices.sellSunglassesBW;
-    } else {
-      welliesSellPrice = levelData.prices.sellWelliesGW;
-      sunglassesSellPrice = levelData.prices.sellSunglassesGW;
-    }
-    // const { welliesQty, sunglassesQty } = data.orders[currentLevel];
-    const { welliesQty, sunglassesQty } = data.orders[currentLevel];
-    const balance = data.balance;
-    batch.update(docRef, {
-      balance: balance + welliesQty * welliesSellPrice + sunglassesQty * sunglassesSellPrice,
-    });
-  });
-  await batch.commit();
-}
+} | null;
