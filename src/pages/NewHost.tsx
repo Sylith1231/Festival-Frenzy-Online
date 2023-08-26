@@ -12,11 +12,12 @@ import { arrayRemove, arrayUnion, collection, doc, getDocs, onSnapshot, query, u
 import { useEffect, useRef, useState } from 'react';
 import { firestore } from '../firebase';
 import { useParams } from 'react-router-dom';
-import { MdCasino, MdClose, MdDone, MdNavigateNext, MdPersonRemove, MdRestartAlt, MdRocketLaunch } from 'react-icons/md';
+import { MdCasino, MdClose, MdDone, MdEditSquare, MdNavigateNext, MdPersonRemove, MdRestartAlt, MdRocketLaunch } from 'react-icons/md';
 import { IconContext } from 'react-icons';
 import festivalData from '../data/FestivalData.json';
 import Switch from 'react-switch';
 import { calculateWeatherProbability } from '../utilities/calculateWeatherProbability';
+import { FaDiceOne, FaDiceTwo, FaDiceThree, FaDiceFour, FaDiceFive, FaDiceSix } from 'react-icons/fa';
 
 export default function NewHost() {
   const [users, setUsers] = useState<string[] | null>(null);
@@ -25,10 +26,11 @@ export default function NewHost() {
   const [allowNewUsers, setAllowNewUsers] = useState<boolean>(true);
   const [currentLevel, setCurrentLevel] = useState<number | null>(null);
   const [ordersSubmitted, setOrdersSubmitted] = useState<string[] | null>(null);
-  const levelData = currentLevel ? (festivalData[currentLevel - 1] as levelData) : null;
   const [activeButton, setActiveButton] = useState<number>(0);
   const [code, setCode] = useState<string | null>(null);
   const [removePlayer, setRemovePlayer] = useState<string | null>(null);
+  const [showInputDiceModal, setShowInputDiceModal] = useState<boolean>(true);
+  const levelData = currentLevel ? (festivalData[currentLevel - 1] as levelData) : null;
   //TODO deal with sessionID not being defined.
   const sessionID = useParams().sessionID ?? '';
 
@@ -82,6 +84,7 @@ export default function NewHost() {
 
   async function autofillOrders() {
     const orderNotSubmitted = users?.filter((user) => !ordersSubmitted?.includes(user));
+    if (orderNotSubmitted?.length == 0) return;
     const colRef = collection(firestore, 'sessions', sessionID, 'players');
     //TODO ask if this is okay and for more info on stack overflow.
     const q = query(colRef, where('__name__', 'in', orderNotSubmitted));
@@ -200,10 +203,10 @@ export default function NewHost() {
                       <MdCasino />
                     </IconContext.Provider>
                   </button>
-                  <button disabled={activeButton != 4} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#9E9E9E] cursor-pointer disabled:cursor-default bg-white hover:bg-[#F5F5F5] rounded-lg h-full`}>
-                    <p className={`${activeButton != 4 && 'text-gray-300'} m-0 font-bold text-lg text-[#9E9E9E]`}>Restart Game</p>
-                    <IconContext.Provider value={{ color: `${activeButton != 4 ? '#D1D5DB' : '#9E9E9E'}`, size: '2em' }}>
-                      <MdRestartAlt />
+                  <button onClick={() => setShowInputDiceModal(true)} disabled={activeButton != 2} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#EF5350] cursor-pointer disabled:cursor-default bg-white hover:bg-[#FFEBEE] rounded-lg h-full`}>
+                    <p className={`${activeButton != 2 && 'text-gray-300'} m-0 font-bold text-lg text-[#EF5350]`}>Input Dice</p>
+                    <IconContext.Provider value={{ color: `${activeButton != 2 ? '#D1D5DB' : '#EF5350'}`, size: '2em' }}>
+                      <MdEditSquare />
                     </IconContext.Provider>
                   </button>
                 </div>
@@ -257,6 +260,7 @@ export default function NewHost() {
         </div>
       </div>
       <RemovePlayerModal removePlayer={removePlayer} setRemovePlayer={setRemovePlayer} sessionID={sessionID} />
+      {showInputDiceModal && <InputDiceModal autofillOrders={autofillOrders} updateBalances={updateBalances} setActiveButton={setActiveButton} setShowInputDiceModal={setShowInputDiceModal} />}
     </>
   );
 }
@@ -315,13 +319,148 @@ function PlayerEntry({ username, sessionID, orderSubmitted, setRemovePlayer }: P
   );
 }
 
+type InputDiceModalProps = {
+  autofillOrders: () => Promise<void>;
+  updateBalances: (diceRolls: number[]) => Promise<void>;
+  setActiveButton: React.Dispatch<React.SetStateAction<number>>;
+  setShowInputDiceModal: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+function InputDiceModal({ autofillOrders, updateBalances, setActiveButton, setShowInputDiceModal }: InputDiceModalProps) {
+  const [die1, setDie1] = useState<number | null>(null);
+  const [die2, setDie2] = useState<number | null>(null);
+
+  async function handleSubmitDice() {
+    const diceRolls = [die1! - 1, die2! - 1];
+    await autofillOrders();
+    await updateBalances(diceRolls)
+      .then(() => {
+        setActiveButton(3);
+      })
+      .then(() => {
+        setShowInputDiceModal(false);
+      })
+      .catch((error) => {
+        console.log('error🤯: ', error);
+      });
+  }
+
+  return (
+    <div className='flex items-center justify-center fixed inset-0 bg-black bg-opacity-80'>
+      <div className='bg-white rounded-lg p-4 flex flex-col justify-center items-center'>
+        <div className='flex mb-4'>
+          {/* First Die Selector */}
+          <div className='flex flex-col items-center justify-center'>
+            <p className='m-0 mb-4 text-xl'>Die 1</p>
+            <div className='flex'>
+              {/* Die 1 Column 1 */}
+              <div className='flex flex-col'>
+                <button onClick={() => setDie1(1)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die1 == 1 ? '#ef5350' : '#E0E0E0', size: die1 == 1 ? '4.5em' : '4em', className: die1 == 1 ? '' : 'dice-icon' }}>
+                    <FaDiceOne />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie1(3)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die1 == 3 ? '#ef5350' : '#E0E0E0', size: die1 == 3 ? '4.5em' : '4em', className: die1 == 3 ? '' : 'dice-icon' }}>
+                    <FaDiceThree />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie1(5)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die1 == 5 ? '#ef5350' : '#E0E0E0', size: die1 == 5 ? '4.5em' : '4em', className: die1 == 5 ? '' : 'dice-icon' }}>
+                    <FaDiceFive />
+                  </IconContext.Provider>
+                </button>
+              </div>
+
+              {/* Die 1 Column 2 */}
+              <div className='flex flex-col items-center justify-center'>
+                <button onClick={() => setDie1(2)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die1 == 2 ? '#ef5350' : '#E0E0E0', size: die1 == 2 ? '4.5em' : '4em', className: die1 == 2 ? '' : 'dice-icon' }}>
+                    <FaDiceTwo />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie1(4)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die1 == 4 ? '#ef5350' : '#E0E0E0', size: die1 == 4 ? '4.5em' : '4em', className: die1 == 4 ? '' : 'dice-icon' }}>
+                    <FaDiceFour />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie1(6)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die1 == 6 ? '#ef5350' : '#E0E0E0', size: die1 == 6 ? '4.5em' : '4em', className: die1 == 6 ? '' : 'dice-icon' }}>
+                    <FaDiceSix />
+                  </IconContext.Provider>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className='mx-4 border-[0.5px] border-solid border-gray-300'></div>
+
+          {/* Second Die Selector */}
+          <div className='flex flex-col items-center justify-center'>
+            <p className='m-0 text-xl mb-4'>Die 2</p>
+
+            <div className='flex'>
+              {/* Die 2 Column 1 */}
+              <div className='flex flex-col'>
+                <button onClick={() => setDie2(1)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die2 == 1 ? '#ef5350' : '#E0E0E0', size: die2 == 1 ? '4.5em' : '4em', className: die2 == 1 ? '' : 'dice-icon' }}>
+                    <FaDiceOne />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie2(3)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die2 == 3 ? '#ef5350' : '#E0E0E0', size: die2 == 3 ? '4.5em' : '4em', className: die2 == 3 ? '' : 'dice-icon' }}>
+                    <FaDiceThree />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie2(5)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die2 == 5 ? '#ef5350' : '#E0E0E0', size: die2 == 5 ? '4.5em' : '4em', className: die2 == 5 ? '' : 'dice-icon' }}>
+                    <FaDiceFive />
+                  </IconContext.Provider>
+                </button>
+              </div>
+
+              {/* Die 2 Column 2 */}
+              <div className='flex flex-col'>
+                <button onClick={() => setDie2(2)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die2 == 2 ? '#ef5350' : '#E0E0E0', size: die2 == 2 ? '4.5em' : '4em', className: die2 == 2 ? '' : 'dice-icon' }}>
+                    <FaDiceTwo />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie2(4)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die2 == 4 ? '#ef5350' : '#E0E0E0', size: die2 == 4 ? '4.5em' : '4em', className: die2 == 4 ? '' : 'dice-icon' }}>
+                    <FaDiceFour />
+                  </IconContext.Provider>
+                </button>
+                <button onClick={() => setDie2(6)} className='bg-transparent border-none'>
+                  <IconContext.Provider value={{ color: die2 == 6 ? '#ef5350' : '#E0E0E0', size: die2 == 6 ? '4.5em' : '4em', className: die2 == 6 ? '' : 'dice-icon' }}>
+                    <FaDiceSix />
+                  </IconContext.Provider>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className='flex flex-col w-full justify-around gap-y-2'>
+          <button onClick={() => setShowInputDiceModal(false)} className='bg-white hover:bg-[#FFEBEE] border-2 border-solid border-gray-300 hover:border-[#EF5350] cursor-pointer rounded-md py-2 w-full text-base'>
+            Cancel
+          </button>
+          <button onClick={handleSubmitDice} className={`${die1 && die2 ? 'bg-white' : 'bg-gray-50'} ${die1 && die2 && 'hover:bg-[#E8F5E9]'} border-2 border-solid border-gray-300 ${die1 && die2 ? 'hover:border-[#66BB6A] cursor-pointer' : 'text-gray-200'} rounded-md py-2 w-full text-base`}>
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type RemovePlayerModalProps = {
   removePlayer: string | null;
   sessionID: string;
   setRemovePlayer: React.Dispatch<React.SetStateAction<string | null>>;
 };
 
-export function RemovePlayerModal({ removePlayer, sessionID, setRemovePlayer }: RemovePlayerModalProps) {
+function RemovePlayerModal({ removePlayer, sessionID, setRemovePlayer }: RemovePlayerModalProps) {
   if (removePlayer == null) return null;
 
   async function handleRemovePlayer(username: string) {

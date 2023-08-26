@@ -8,6 +8,7 @@ import Leaderboard from './pages/Leaderboard';
 import Test from './pages/Test';
 import CreateSession from './pages/CreateSession';
 import NewHost from './pages/NewHost';
+import Test2 from './pages/Test2';
 
 function chooseRouter() {
   if (import.meta.env.DEV) {
@@ -58,6 +59,10 @@ const router = chooseRouter()(
       path: '/leaderboard/:sessionID',
       element: <Leaderboard />,
       loader: authLoader,
+    },
+    {
+      path: '/test2',
+      element: <Test2 />,
     },
     {
       path: '/*',

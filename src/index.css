@@ -338,3 +338,13 @@ body,
   fill: #e0e0e0;
   /* fill: '#F44336'; */
 }
+
+.dice-icon:hover {
+  fill: #e57373;
+  /* fill: '#F44336'; */
+}
+
+.dice-icon2:hover {
+  fill: #ef5350;
+  /* fill: '#F44336'; */
+}
