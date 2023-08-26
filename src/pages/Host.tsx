@@ -110,7 +110,7 @@ export default function Host() {
 
     await autofillOrders();
 
-    await updateBalances(diceRolls)
+    await updateBalances({ dice: diceRolls, manualInput: false })
       .then(() => {
         setActiveButton(3);
       })
@@ -125,13 +125,13 @@ export default function Host() {
     await updateDoc(docRef, { currentLevel: nextLevel, ordersSubmitted: [] });
   }
 
-  async function updateBalances(diceRolls: number[]) {
+  async function updateBalances(diceRolls: finalDieValues) {
     const batch = writeBatch(firestore);
     batch.update(doc(firestore, 'sessions', sessionID), {
       [`dieValues.${currentLevel}`]: diceRolls,
     });
     const snapshot = await getDocs(collection(firestore, 'sessions', sessionID, 'players'));
-    const goodWeather = levelData?.weather[diceRolls[0] + diceRolls[1]] == 1;
+    const goodWeather = levelData?.weather[diceRolls.dice[0] + diceRolls.dice[1]] == 1;
     snapshot.forEach((doc) => {
       const data = doc.data();
       const balance = data.balance;
@@ -321,7 +321,7 @@ function PlayerEntry({ username, sessionID, orderSubmitted, setRemovePlayer }: P
 
 type InputDiceModalProps = {
   autofillOrders: () => Promise<void>;
-  updateBalances: (diceRolls: number[]) => Promise<void>;
+  updateBalances: (diceRolls: finalDieValues) => Promise<void>;
   setActiveButton: React.Dispatch<React.SetStateAction<number>>;
   setShowInputDiceModal: React.Dispatch<React.SetStateAction<boolean>>;
 };
@@ -331,7 +331,7 @@ function InputDiceModal({ autofillOrders, updateBalances, setActiveButton, setSh
   const [die2, setDie2] = useState<number | null>(null);
 
   async function handleSubmitDice() {
-    const diceRolls = [die1! - 1, die2! - 1];
+    const diceRolls = { dice: [die1! - 1, die2! - 1], manualInput: true };
     await autofillOrders();
     await updateBalances(diceRolls)
       .then(() => {
@@ -528,3 +528,8 @@ type levelData = {
   weather: (0 | 1)[];
   image: string;
 } | null;
+
+type finalDieValues = {
+  dice: number[];
+  manualInput: boolean | null;
+};

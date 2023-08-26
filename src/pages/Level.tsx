@@ -42,7 +42,8 @@ export default function level() {
   const [sunglassesQty, setSunglassesQty] = useState(0);
   // const [currentLevel, setCurrentLevel] = useState(0);
   const [orderSubmitted, setOrderSubmitted] = useState<boolean>(false);
-  const [finalDieValues, setFinalDieValues] = useState<number[]>([-1, -1]);
+  // const [finalDieValues, setFinalDieValues] = useState<number[]>([-1, -1]);
+  const [finalDieValues, setFinalDieValues] = useState<finalDieValues>({ dice: [-1, -1], manualInput: null });
   const levelData = festivalData[currentLevel - 1];
   const levelImages = [IsleOfWight, Glastonbury, Lattitude, Womad, Sonisphere, BigChillFestivalfrom, BGG, VFestival, Reading];
   const tempBalance = balance - welliesQty * levelData.prices.welliesCost - sunglassesQty * levelData.prices.sunglassesCost;
@@ -116,7 +117,7 @@ export default function level() {
         </div>
         <OrderButton docRef={docRef} levelID={currentLevel} username={username} startBalance={balance} endBalance={tempBalance} welliesQty={welliesQty} sunglassesQty={sunglassesQty} orderSubmitted={orderSubmitted} setOrderSubmitted={setOrderSubmitted} />
       </div>
-      {!finalDieValues.includes(-1) ? <DiceModal finalDieValues={finalDieValues} /> : null}
+      {!finalDieValues.dice.includes(-1) ? <DiceModal finalDieValues={finalDieValues} /> : null}
     </div>
   );
 }
@@ -272,7 +273,7 @@ function OrderButton({ docRef, levelID, username, startBalance, endBalance, well
   );
 }
 
-function DiceModal({ finalDieValues }: { finalDieValues: number[] }) {
+function DiceModal({ finalDieValues }: { finalDieValues: finalDieValues }) {
   const [dies, setDies] = useState([5, 5]);
   const intervals = [208.0, 232.00000000000003, 272.0, 328.0, 400.0, 488.00000000000006, 592.0000000000001, 712.0000000000001, 848.0, 1000.0, 1168.0000000000002, 1352.0000000000002, 1552.0000000000002, 1768.0000000000002, 2000.0];
   const die_images = [Die1, Die2, Die3, Die4, Die5, Die6];
@@ -282,17 +283,22 @@ function DiceModal({ finalDieValues }: { finalDieValues: number[] }) {
   }
 
   useEffect(() => {
-    const leftDieNumbers = Array.from({ length: 29 }, () => Math.floor(Math.random() * 6));
-    const rightDieNumbers = Array.from({ length: 29 }, () => Math.floor(Math.random() * 6));
-    leftDieNumbers.push(finalDieValues[0]);
-    rightDieNumbers.push(finalDieValues[1]);
+    const { dice, manualInput } = finalDieValues;
+    if (manualInput) {
+      setDies([dice[0], dice[1]]);
+    } else {
+      const leftDieNumbers = Array.from({ length: 29 }, () => Math.floor(Math.random() * 6));
+      const rightDieNumbers = Array.from({ length: 29 }, () => Math.floor(Math.random() * 6));
+      leftDieNumbers.push(finalDieValues.dice[0]);
+      rightDieNumbers.push(finalDieValues.dice[1]);
 
-    (async () => {
-      for (let i = 0; i < 30; i++) {
-        setDies([leftDieNumbers[i], rightDieNumbers[i]]);
-        i < 20 ? await sleep(200) : await sleep(intervals[i - 20]);
-      }
-    })();
+      (async () => {
+        for (let i = 0; i < 30; i++) {
+          setDies([leftDieNumbers[i], rightDieNumbers[i]]);
+          i < 20 ? await sleep(200) : await sleep(intervals[i - 20]);
+        }
+      })();
+    }
   }, []);
 
   return (
@@ -318,3 +324,8 @@ function DiceModal({ finalDieValues }: { finalDieValues: number[] }) {
     </div>
   );
 }
+
+type finalDieValues = {
+  dice: number[];
+  manualInput: boolean | null;
+};
