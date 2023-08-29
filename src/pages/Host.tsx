@@ -18,7 +18,6 @@ import festivalData from '../data/FestivalData.json';
 import Switch from 'react-switch';
 import { calculateWeatherProbability } from '../utilities/calculateWeatherProbability';
 import { FaDiceOne, FaDiceTwo, FaDiceThree, FaDiceFour, FaDiceFive, FaDiceSix } from 'react-icons/fa';
-import { remove } from 'firebase/database';
 import { sleep } from '../utilities/sleep';
 
 export default function Host() {

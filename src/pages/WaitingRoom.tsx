@@ -1,9 +1,8 @@
-import { arrayRemove, arrayUnion, doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { firestore } from '../firebase.ts';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useContext, useEffect, useRef, useState } from 'react';
 import LandingBackground from '../assets/landing-background.jpeg';
-import JoinIcon from '../assets/join.png';
 import { TeamContext } from '../context/TeamContext.tsx';
 
 //TODO - strongly type this.
