@@ -24,6 +24,7 @@ import Die3 from '../assets/die/die3.png';
 import Die4 from '../assets/die/die4.png';
 import Die5 from '../assets/die/die5.png';
 import Die6 from '../assets/die/die6.png';
+import Countdown from 'react-countdown';
 
 export default function Host() {
   const [teams, setTeams] = useState<number[] | null>(null);
@@ -36,7 +37,8 @@ export default function Host() {
   const [code, setCode] = useState<string | null>(null);
   const [removeTeam, setRemoveTeam] = useState<number | null>(null);
   const [showInputDiceModal, setShowInputDiceModal] = useState<boolean>(false);
-  const [dieRolling, setDiceRolling] = useState<finalDieValues | null>(null);
+  const [diceRolling, setDiceRolling] = useState<finalDieValues | null>(null);
+  const [countdown, setCountdown] = useState<Date | null>(null);
   const levelData = currentLevel ? (festivalData[currentLevel - 1] as levelData) : null;
   //TODO deal with sessionID not being defined.
   const sessionID = useParams().sessionID ?? '';
@@ -114,7 +116,17 @@ export default function Host() {
     });
     await batch.commit();
   }
+
+  async function startDiceCountdown() {
+    const currentTime = new Date();
+    const countdownFinishTime = new Date(currentTime.getTime() + 15000);
+    await updateDoc(doc(firestore, 'sessions', sessionID), { countdown: countdownFinishTime });
+    setCountdown(countdownFinishTime);
+  }
+
   async function handleRollDice() {
+    setCountdown(null);
+
     const diceRolls = [Math.floor(Math.random() * 6), Math.floor(Math.random() * 6)];
 
     await autofillOrders();
@@ -131,6 +143,9 @@ export default function Host() {
     const docRef = doc(firestore, 'sessions', sessionID);
     await updateDoc(docRef, { currentLevel: nextLevel, ordersSubmitted: [] });
     setDiceRolling(null);
+    if (nextLevel > 0) {
+      setActiveButton(2);
+    }
   }
 
   async function updateBalances(diceRolls: finalDieValues) {
@@ -158,6 +173,7 @@ export default function Host() {
   }
 
   //TODO Implement checks for whether state is null, and implement loading either for subcomponents or entire page.
+  console.log('dieRolling: ', diceRolling);
   return (
     /* Grey background div */
     <>
@@ -205,7 +221,7 @@ export default function Host() {
                   </button>
                 </div>
                 <div className='w-full flex flex-col gap-y-2'>
-                  <button onClick={handleRollDice} disabled={activeButton != 2} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#EF5350] cursor-pointer disabled:cursor-default bg-white hover:bg-[#FFEBEE] rounded-lg h-full`}>
+                  <button onClick={startDiceCountdown} disabled={activeButton != 2} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#EF5350] cursor-pointer disabled:cursor-default bg-white hover:bg-[#FFEBEE] rounded-lg h-full`}>
                     <p className={`${activeButton != 2 && 'text-gray-300'} m-0 font-bold text-lg text-[#EF5350]`}>Roll Dice</p>
                     <IconContext.Provider value={{ color: `${activeButton != 2 ? '#D1D5DB' : '#EF5350'}`, size: '2em' }}>
                       <MdCasino />
@@ -266,13 +282,28 @@ export default function Host() {
             </div>
           </div>
         </div>
-        {dieRolling ? <DiceModal finalDieValues={dieRolling!} setActiveButton={setActiveButton} /> : <div className='h-[80px] w-[190px]'></div>}
+        {diceRolling ? (
+          <DiceModal finalDieValues={diceRolling!} setActiveButton={setActiveButton} />
+        ) : countdown ? (
+          <Countdown
+            renderer={countdownRenderer}
+            date={countdown!}
+            onComplete={() => {
+              setCountdown(null);
+              handleRollDice();
+            }}
+          />
+        ) : null}
       </div>
       <RemoveTeamModal removeTeam={removeTeam} setRemoveTeam={setRemoveTeam} sessionID={sessionID} />
       {showInputDiceModal && <InputDiceModal autofillOrders={autofillOrders} updateBalances={updateBalances} setActiveButton={setActiveButton} setShowInputDiceModal={setShowInputDiceModal} />}
     </>
   );
 }
+
+const countdownRenderer = ({ seconds }: { seconds: any; completed: any }) => {
+  return <div className='h-[80px] w-[190px] flex items-center justify-center'>{<p className='font-bold text-lg'>{seconds}</p>}</div>;
+};
 
 type TeamEntryProps = {
   teamNumber: number;

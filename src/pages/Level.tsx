@@ -11,6 +11,8 @@ import Die4 from '../assets/die/die4.png';
 import Die5 from '../assets/die/die5.png';
 import Die6 from '../assets/die/die6.png';
 
+import HourglassAnimation from '../assets/hourglass.gif';
+
 import IsleOfWight from '../assets/festival-banners/isle-of-wight.jpeg';
 import Glastonbury from '../assets/festival-banners/glastonbury.jpg';
 import Lattitude from '../assets/festival-banners/lattitude.jpeg';
@@ -27,6 +29,7 @@ import { TeamContext } from '../context/TeamContext';
 import { firestore } from '../firebase';
 import { DocumentReference, arrayRemove, arrayUnion, doc, getDoc, onSnapshot, writeBatch } from 'firebase/firestore';
 import { useNavigate, useParams } from 'react-router-dom';
+import Countdown from 'react-countdown';
 
 export default function level() {
   //UseContext
@@ -44,6 +47,7 @@ export default function level() {
   const [orderSubmitted, setOrderSubmitted] = useState<boolean>(false);
   // const [finalDieValues, setFinalDieValues] = useState<number[]>([-1, -1]);
   const [finalDieValues, setFinalDieValues] = useState<finalDieValues>({ dice: [-1, -1], manualInput: null });
+  const [countdown, setCountdown] = useState<Date | null>(null);
   const levelData = festivalData[currentLevel - 1];
   const levelImages = [IsleOfWight, Glastonbury, Lattitude, Womad, Sonisphere, BigChillFestivalfrom, BGG, VFestival, Reading];
   const tempBalance = balance - welliesQty * levelData.prices.welliesCost - sunglassesQty * levelData.prices.sunglassesCost;
@@ -64,6 +68,9 @@ export default function level() {
     });
     const unsubscribe = onSnapshot(docRef, (doc) => {
       const data = doc.data();
+      if (data?.countdown) {
+        setCountdown(data?.countdown.toDate());
+      }
       if (data?.dieValues) {
         if (data.dieValues.hasOwnProperty(currentLevel)) {
           setFinalDieValues(data.dieValues[currentLevel]);
@@ -78,13 +85,26 @@ export default function level() {
     };
   }, [teamNumber, sessionID]);
 
+  const countdownRenderer = ({ seconds }: { seconds: any; completed: any }) => {
+    return (
+      <div className='flex items-center gap-x-3'>
+        <img width={40} height={40 * 1.2} src={HourglassAnimation} />
+        <p className='text-xl font-bold'>{seconds}s</p>
+      </div>
+    );
+  };
+
   return (
     // <div className='background-image level-container' style={{ backgroundImage: `url(${IsleOfWight})` }}>
     <div className='background-image level-container' style={{ backgroundImage: `url(${levelImages[currentLevel - 1]})` }}>
       <div style={{ backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '24px', rowGap: '32px' }}>
-        <h1 style={{ color: 'white', fontSize: '40px' }}>
-          <span style={{ color: 'gold' }}>{levelData.level}</span> {levelData.name}
-        </h1>
+        <div className='w-full flex items-center justify-between'>
+          <h1 className='flex-grow text-center' style={{ color: 'white', fontSize: '40px' }}>
+            <span style={{ color: 'gold' }}>{levelData.level}</span> {levelData.name}
+          </h1>
+          {/* Timer */}
+          {countdown && <Countdown onComplete={() => setCountdown(null)} onTick={() => console.log('tick')} date={countdown} renderer={countdownRenderer} />}
+        </div>
         <Forecast weather={levelData.weather} />
         <ItemPrices prices={levelData.prices} />
         <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%' }}>
