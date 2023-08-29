@@ -74,7 +74,7 @@ const router = chooseRouter()(
 console.log(import.meta.env.DEV);
 
 function App() {
-  let preventComitUntilBaseChanged;
+  // let preventComitUntilBaseChanged;
   return (
     <TeamContextProvider>
       <RouterProvider router={router} />

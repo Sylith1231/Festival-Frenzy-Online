@@ -18,7 +18,6 @@ import festivalData from '../data/FestivalData.json';
 import Switch from 'react-switch';
 import { calculateWeatherProbability } from '../utilities/calculateWeatherProbability';
 import { FaDiceOne, FaDiceTwo, FaDiceThree, FaDiceFour, FaDiceFive, FaDiceSix } from 'react-icons/fa';
-import { sleep } from '../utilities/sleep';
 import Die1 from '../assets/die/die1.png';
 import Die2 from '../assets/die/die2.png';
 import Die3 from '../assets/die/die3.png';
