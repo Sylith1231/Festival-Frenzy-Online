@@ -19,6 +19,12 @@ import Switch from 'react-switch';
 import { calculateWeatherProbability } from '../utilities/calculateWeatherProbability';
 import { FaDiceOne, FaDiceTwo, FaDiceThree, FaDiceFour, FaDiceFive, FaDiceSix } from 'react-icons/fa';
 import { sleep } from '../utilities/sleep';
+import Die1 from '../assets/die/die1.png';
+import Die2 from '../assets/die/die2.png';
+import Die3 from '../assets/die/die3.png';
+import Die4 from '../assets/die/die4.png';
+import Die5 from '../assets/die/die5.png';
+import Die6 from '../assets/die/die6.png';
 
 export default function Host() {
   const [teams, setTeams] = useState<number[] | null>(null);
@@ -31,7 +37,7 @@ export default function Host() {
   const [code, setCode] = useState<string | null>(null);
   const [removeTeam, setRemoveTeam] = useState<number | null>(null);
   const [showInputDiceModal, setShowInputDiceModal] = useState<boolean>(false);
-  const [dieRolling, setDieRolling] = useState<boolean>(false);
+  const [dieRolling, setDiceRolling] = useState<finalDieValues | null>(null);
   const levelData = currentLevel ? (festivalData[currentLevel - 1] as levelData) : null;
   //TODO deal with sessionID not being defined.
   const sessionID = useParams().sessionID ?? '';
@@ -48,13 +54,15 @@ export default function Host() {
         setCurrentLevel(data.currentLevel ?? null);
         setOrdersSubmitted(data.ordersSubmitted ?? null);
         setCode(data.code ?? null);
-        if (data.gameStarted == false) {
-          setActiveButton(1);
-        } else {
-          if (data.dieValues[data.currentLevel] || data.currentLevel < 0) {
-            setActiveButton(3);
+        if (activeButton == 0) {
+          if (data.gameStarted == false) {
+            setActiveButton(1);
           } else {
-            setActiveButton(2);
+            if (data.dieValues[data.currentLevel] || data.currentLevel < 0) {
+              setActiveButton(3);
+            } else {
+              setActiveButton(2);
+            }
           }
         }
       } else {
@@ -115,16 +123,15 @@ export default function Host() {
     await updateBalances({ dice: diceRolls, manualInput: false }).catch((error) => {
       console.log('error🤯: ', error);
     });
-
-    setDieRolling(true);
-    await sleep(10000);
-    setDieRolling(false);
+    setActiveButton(-1);
+    setDiceRolling({ dice: diceRolls, manualInput: false });
   }
 
   async function handleNext() {
     const nextLevel = currentLevel! > 0 ? -currentLevel! : -(currentLevel! - 1);
     const docRef = doc(firestore, 'sessions', sessionID);
     await updateDoc(docRef, { currentLevel: nextLevel, ordersSubmitted: [] });
+    setDiceRolling(null);
   }
 
   async function updateBalances(diceRolls: finalDieValues) {
@@ -155,7 +162,7 @@ export default function Host() {
   return (
     /* Grey background div */
     <>
-      <div className='flex items-center justify-center h-full w-full bg-gray-100'>
+      <div className='flex flex-col items-center justify-center h-full w-full bg-gray-100 gap-y-8'>
         <div className='flex gap-x-4'>
           {/* Players / Leaderboard Section */}
           <div className='bg-white rounded-xl p-4'>
@@ -191,21 +198,12 @@ export default function Host() {
                       <MdRocketLaunch />
                     </IconContext.Provider>
                   </button>
-                  {!dieRolling ? (
-                    <button onClick={handleNext} disabled={activeButton != 3} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#03A9F4] cursor-pointer disabled:cursor-default bg-white hover:bg-[#E1F5FE] rounded-lg h-full`}>
-                      <p className={`${activeButton != 3 && 'text-gray-300'} m-0 font-bold text-lg text-[#03A9F4]`}>Next</p>
-                      <IconContext.Provider value={{ color: `${activeButton != 3 ? '#D1D5DB' : '#03A9F4'}`, size: '2em' }}>
-                        <MdNavigateNext />
-                      </IconContext.Provider>
-                    </button>
-                  ) : (
-                    <button onClick={handleNext} disabled={true} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#03A9F4] cursor-pointer disabled:cursor-default bg-white hover:bg-[#E1F5FE] rounded-lg h-full`}>
-                      <p className={`text-gray-300 m-0 font-bold text-lg`}>Next</p>
-                      <IconContext.Provider value={{ color: '#D1D5DB', size: '2em' }}>
-                        <MdNavigateNext />
-                      </IconContext.Provider>
-                    </button>
-                  )}
+                  <button onClick={handleNext} disabled={activeButton != 3} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#03A9F4] cursor-pointer disabled:cursor-default bg-white hover:bg-[#E1F5FE] rounded-lg h-full`}>
+                    <p className={`${activeButton != 3 ? 'text-gray-300' : 'text-[#03A9F4]'} m-0 font-bold text-lg`}>Next</p>
+                    <IconContext.Provider value={{ color: `${activeButton != 3 ? '#D1D5DB' : '#03A9F4'}`, size: '2em' }}>
+                      <MdNavigateNext />
+                    </IconContext.Provider>
+                  </button>
                 </div>
                 <div className='w-full flex flex-col gap-y-2'>
                   <button onClick={handleRollDice} disabled={activeButton != 2} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#EF5350] cursor-pointer disabled:cursor-default bg-white hover:bg-[#FFEBEE] rounded-lg h-full`}>
@@ -269,6 +267,7 @@ export default function Host() {
             </div>
           </div>
         </div>
+        {dieRolling ? <DiceModal finalDieValues={dieRolling!} setActiveButton={setActiveButton} /> : <div className='h-[80px] w-[190px]'></div>}
       </div>
       <RemoveTeamModal removeTeam={removeTeam} setRemoveTeam={setRemoveTeam} sessionID={sessionID} />
       {showInputDiceModal && <InputDiceModal autofillOrders={autofillOrders} updateBalances={updateBalances} setActiveButton={setActiveButton} setShowInputDiceModal={setShowInputDiceModal} />}
@@ -501,6 +500,57 @@ function RemoveTeamModal({ removeTeam, sessionID, setRemoveTeam }: RemoveTeamMod
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function DiceModal({ finalDieValues, setActiveButton }: { finalDieValues: finalDieValues; setActiveButton: React.Dispatch<React.SetStateAction<number>> }) {
+  const [dies, setDies] = useState([5, 5]);
+  const intervals = [208.0, 232.00000000000003, 272.0, 328.0, 400.0, 488.00000000000006, 592.0000000000001, 712.0000000000001, 848.0, 1000.0, 1168.0000000000002, 1352.0000000000002, 1552.0000000000002, 1768.0000000000002, 2000.0];
+  const die_images = [Die1, Die2, Die3, Die4, Die5, Die6];
+
+  function sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  useEffect(() => {
+    const { dice, manualInput } = finalDieValues;
+    if (manualInput) {
+      setDies([dice[0], dice[1]]);
+    } else {
+      const leftDieNumbers = Array.from({ length: 29 }, () => Math.floor(Math.random() * 6));
+      const rightDieNumbers = Array.from({ length: 29 }, () => Math.floor(Math.random() * 6));
+      leftDieNumbers.push(finalDieValues.dice[0]);
+      rightDieNumbers.push(finalDieValues.dice[1]);
+
+      (async () => {
+        for (let i = 0; i < 30; i++) {
+          setDies([leftDieNumbers[i], rightDieNumbers[i]]);
+          i < 20 ? await sleep(200) : await sleep(intervals[i - 20]);
+        }
+        setActiveButton(3);
+      })();
+    }
+  }, []);
+
+  return (
+    <div className='flex items-center justify-center gap-x-[30px]'>
+      <img
+        src={die_images[dies[0]]}
+        className='w-[80px]'
+        draggable='false'
+        onContextMenu={(event) => {
+          event.preventDefault();
+        }}
+      />
+      <img
+        src={die_images[dies[1]]}
+        className='w-[80px]'
+        draggable='false'
+        onContextMenu={(event) => {
+          event.preventDefault();
+        }}
+      />
     </div>
   );
 }
