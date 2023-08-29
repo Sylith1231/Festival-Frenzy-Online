@@ -1,9 +1,11 @@
 import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { firestore } from '../firebase';
 import { useNavigate } from 'react-router-dom';
+import { useRef } from 'react';
 
 export default function CreateSession() {
   const navigate = useNavigate();
+  const numberOfTeamsRef = useRef<HTMLInputElement>(null);
 
   async function handleCreateSession() {
     const code = await getValidCode();
@@ -11,16 +13,22 @@ export default function CreateSession() {
     const docRef = await addDoc(colRef, {
       code: code,
       currentLevel: 0,
-      users: [],
-      allowNewUsers: true,
+      teams: [],
+      allowNewTeams: true,
       dieValues: {},
       gameStarted: false,
+      numberOfTeams: Number(numberOfTeamsRef.current?.value),
     });
     navigate(`/host/${docRef.id}`);
   }
 
   return (
-    <div style={{ display: 'flex', columnGap: '18px' }}>
+    <div style={{ display: 'flex flex-col', columnGap: '18px' }}>
+      <div className='flex m-[24px] items-center gap-x-4'>
+        <p>Number of teams</p>
+        <input className='h-[30px]' ref={numberOfTeamsRef} type='number' defaultValue={20} />
+      </div>
+
       <button style={{ margin: '24px' }} onClick={handleCreateSession}>
         <h2>Create Session!</h2>
       </button>

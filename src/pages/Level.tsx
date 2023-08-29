@@ -23,14 +23,14 @@ import Reading from '../assets/festival-banners/reading.jpg';
 
 import festivalData from '../data/FestivalData.json';
 import { Dispatch, SetStateAction, useContext, useEffect, useState } from 'react';
-import { UsernameContext } from '../context/UsernameContext';
+import { TeamContext } from '../context/TeamContext';
 import { firestore } from '../firebase';
 import { DocumentReference, arrayRemove, arrayUnion, doc, getDoc, onSnapshot, writeBatch } from 'firebase/firestore';
 import { useNavigate, useParams } from 'react-router-dom';
 
 export default function level() {
   //UseContext
-  const { username } = useContext(UsernameContext);
+  const { teamNumber } = useContext(TeamContext);
 
   //UseParams
   const sessionID: string = useParams()?.sessionID ?? '';
@@ -53,7 +53,7 @@ export default function level() {
 
   useEffect(() => {
     const docRef = doc(firestore, 'sessions', sessionID);
-    const subcollectionUnsubscribe = onSnapshot(doc(docRef, 'players', username), (doc) => {
+    const subcollectionUnsubscribe = onSnapshot(doc(docRef, 'teams', String(teamNumber)), (doc) => {
       const data = doc.data();
       if (data) {
         setBalance(data.balance);
@@ -76,7 +76,7 @@ export default function level() {
       subcollectionUnsubscribe();
       unsubscribe();
     };
-  }, [username, sessionID]);
+  }, [teamNumber, sessionID]);
 
   return (
     // <div className='background-image level-container' style={{ backgroundImage: `url(${IsleOfWight})` }}>
@@ -115,7 +115,7 @@ export default function level() {
             )}
           </div>
         </div>
-        <OrderButton docRef={docRef} levelID={currentLevel} username={username} startBalance={balance} endBalance={tempBalance} welliesQty={welliesQty} sunglassesQty={sunglassesQty} orderSubmitted={orderSubmitted} setOrderSubmitted={setOrderSubmitted} />
+        <OrderButton docRef={docRef} levelID={currentLevel} teamNumber={teamNumber} startBalance={balance} endBalance={tempBalance} welliesQty={welliesQty} sunglassesQty={sunglassesQty} orderSubmitted={orderSubmitted} setOrderSubmitted={setOrderSubmitted} />
       </div>
       {!finalDieValues.dice.includes(-1) ? <DiceModal finalDieValues={finalDieValues} /> : null}
     </div>
@@ -206,7 +206,7 @@ function ItemPrices({ prices }: { prices: ItemPricesType }) {
 interface OrderButtonProps {
   docRef: DocumentReference;
   levelID: number;
-  username: string;
+  teamNumber: number;
   startBalance: number;
   endBalance: number;
   welliesQty: number;
@@ -215,13 +215,12 @@ interface OrderButtonProps {
   setOrderSubmitted: Dispatch<SetStateAction<boolean>>;
 }
 
-function OrderButton({ docRef, levelID, username, startBalance, endBalance, welliesQty, sunglassesQty, orderSubmitted, setOrderSubmitted }: OrderButtonProps) {
-  async function handleSubmitOrder(docRef: DocumentReference, levelID: number, username: string, startBalance: number, endBalance: number, welliesQty: number, sunglassesQty: number) {
+function OrderButton({ docRef, levelID, teamNumber, startBalance, endBalance, welliesQty, sunglassesQty, orderSubmitted, setOrderSubmitted }: OrderButtonProps) {
+  async function handleSubmitOrder(docRef: DocumentReference, levelID: number, teamNumber: number, startBalance: number, endBalance: number, welliesQty: number, sunglassesQty: number) {
     if (endBalance < 0) return;
-
     const batch = writeBatch(firestore);
 
-    batch.update(doc(docRef, 'players', username), {
+    batch.update(doc(docRef, 'teams', String(teamNumber)), {
       balance: endBalance,
       [`orders.${levelID}`]: {
         orderSubmitted: true,
@@ -233,19 +232,18 @@ function OrderButton({ docRef, levelID, username, startBalance, endBalance, well
     });
 
     batch.update(docRef, {
-      ordersSubmitted: arrayUnion(username),
+      ordersSubmitted: arrayUnion(teamNumber),
     });
-
     setOrderSubmitted(true);
 
     await batch.commit();
   }
 
-  async function handleCancelOrder(docRef: DocumentReference, levelID: number, username: string) {
-    const originalBalance = await getDoc(doc(docRef, 'players', username)).then((doc) => doc.data()?.orders[levelID].startBalance);
+  async function handleCancelOrder(docRef: DocumentReference, levelID: number, teamNumber: number) {
+    const originalBalance = await getDoc(doc(docRef, 'teams', String(teamNumber))).then((doc) => doc.data()?.orders[levelID].startBalance);
 
     const batch = writeBatch(firestore);
-    batch.update(doc(docRef, 'players', username), {
+    batch.update(doc(docRef, 'teams', String(teamNumber)), {
       balance: originalBalance,
       [`orders.${levelID}`]: {
         orderSubmitted: false,
@@ -254,7 +252,7 @@ function OrderButton({ docRef, levelID, username, startBalance, endBalance, well
     });
 
     batch.update(docRef, {
-      ordersSubmitted: arrayRemove(username),
+      ordersSubmitted: arrayRemove(teamNumber),
     });
 
     await batch.commit();
@@ -263,11 +261,11 @@ function OrderButton({ docRef, levelID, username, startBalance, endBalance, well
   }
 
   return !orderSubmitted ? (
-    <button className='submit-order-button' onClick={() => handleSubmitOrder(docRef, levelID, username, startBalance, endBalance, welliesQty, sunglassesQty)}>
+    <button className='submit-order-button' onClick={() => handleSubmitOrder(docRef, levelID, teamNumber, startBalance, endBalance, welliesQty, sunglassesQty)}>
       <h2>Submit Order!</h2>
     </button>
   ) : (
-    <button className='cancel-order-button' onClick={() => handleCancelOrder(docRef, levelID, username)}>
+    <button className='cancel-order-button' onClick={() => handleCancelOrder(docRef, levelID, teamNumber)}>
       <h2>Cancel order!</h2>
     </button>
   );

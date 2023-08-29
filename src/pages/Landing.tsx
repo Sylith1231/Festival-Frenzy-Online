@@ -3,14 +3,15 @@ import { firestore } from '../firebase.ts';
 import { useNavigate } from 'react-router-dom';
 import { useContext, useEffect, useState } from 'react';
 import LandingBackground from '../assets/landing-background.jpeg';
-import { UsernameContext } from '../context/UsernameContext.tsx';
+import { TeamContext } from '../context/TeamContext.tsx';
 
 export default function Landing() {
-  const { setUsername } = useContext(UsernameContext);
+  const { teamNumber, setTeamNumber } = useContext(TeamContext);
+  console.log(teamNumber);
 
   useEffect(() => {
     sessionStorage.clear();
-    setUsername('');
+    setTeamNumber(0);
   }, []);
 
   return (
@@ -54,7 +55,7 @@ function Input() {
 async function validateCode(code: string): Promise<string | null> {
   try {
     const sessionsRef = collection(firestore, 'sessions');
-    const q = query(sessionsRef, where('allowNewUsers', '==', true), where('code', '==', code));
+    const q = query(sessionsRef, where('allowNewTeams', '==', true), where('code', '==', code));
     const querySnapshot = await getDocs(q);
     //Check if there is a session with the given code
     if (querySnapshot.empty) {

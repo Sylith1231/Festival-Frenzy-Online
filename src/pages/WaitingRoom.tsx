@@ -1,50 +1,34 @@
-import { arrayUnion, doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { firestore } from '../firebase.ts';
-import { useLoaderData, useNavigate, useParams } from 'react-router-dom';
-import { useContext, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useContext, useEffect, useRef, useState } from 'react';
 import LandingBackground from '../assets/landing-background.jpeg';
 import JoinIcon from '../assets/join.png';
-import { UsernameContext } from '../context/UsernameContext.tsx';
-import { validateUsername } from '../utilities/validateUsername.ts';
+import { TeamContext } from '../context/TeamContext.tsx';
 
 //TODO - strongly type this.
-export async function loader({ params }: any): Promise<string[]> {
-  const sessionID = params.sessionID;
-  const docRef = doc(firestore, 'sessions', sessionID);
-  const docSnap = await getDoc(docRef);
-
-  if (docSnap.exists()) {
-    const data = docSnap.data();
-    const users = data.users;
-    if (users === undefined) {
-      return [];
-    }
-    return users;
-  } else {
-    console.log('error');
-    return [];
-  }
-}
 
 export default function WaitingRoom() {
-  const [users, setUsers] = useState(useLoaderData() as string[]);
+  const { teamNumber, setTeamNumber } = useContext(TeamContext);
+  const [teams, setTeams] = useState<Number[]>([]);
+  const [numberOfTeams, setNumberOfTeams] = useState<number>(0);
+
   const sessionID: string = useParams()?.sessionID ?? '';
-  const { username, setUsername } = useContext(UsernameContext);
-  const [tempUsername, setTempUsername] = useState('');
-  // const [userInGame, setUserInGame] = useState(false);
-  const userInGame = username != '';
+  const selectRef = useRef<HTMLSelectElement>(null);
+
   const navigate = useNavigate();
 
   //TODO load data solely in useeffect not in loader.
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(firestore, 'sessions', sessionID), (doc) => {
       const data = doc.data();
-      const users = data?.users;
-      if (users === undefined) {
+      setNumberOfTeams(data?.numberOfTeams);
+      const teams = data?.teams;
+      if (teams === undefined) {
         // setWaitingUsers([]);
-        setUsers([]);
+        setTeams([]);
       } else {
-        setUsers(users);
+        setTeams(teams);
       }
 
       if (data?.gameStarted) {
@@ -56,19 +40,27 @@ export default function WaitingRoom() {
 
   //TODO - validate against existing usernames.
   //TODO - validate against empty string etc.
-  async function handleAddPlayer(username: string) {
-    const validUsername = await validateUsername(username, sessionID);
-    if (!validUsername) return;
+
+  async function handleAddTeam(teamNumber: number) {
+    if (teamNumber == 0) return;
+    //TODO - validate against existing usernames.
     const docRef = doc(firestore, 'sessions', sessionID);
-    // setUserInGame(true);
-    await updateDoc(docRef, { users: arrayUnion(username) });
-    setUsername(username);
-    sessionStorage.setItem('username', username);
+    await updateDoc(docRef, { teams: arrayUnion(teamNumber) }).then(() => {
+      setTeamNumber(teamNumber);
+      sessionStorage.setItem('teamNumber', String(teamNumber));
+    });
+  }
+
+  async function handleRemoveTeam(teamNumber: number) {
+    const docRef = doc(firestore, 'sessions', sessionID);
+    await updateDoc(docRef, { teams: arrayRemove(teamNumber) }).then(() => {
+      setTeamNumber(0);
+      sessionStorage.setItem('teamNumber', String(0));
+    });
   }
 
   //TODO - add loading state.
-  console.log('sessionStorage.username: ', sessionStorage.getItem('username'));
-  console.log('username: ', username);
+  console.log('teamNumber: ', teamNumber);
   return (
     <div className='background-image' style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundImage: `url(${LandingBackground})` }}>
       <div className='waiting-room-container'>
@@ -77,15 +69,39 @@ export default function WaitingRoom() {
         </h1>
         <h2>Waiting for host to start the game...</h2>
         <div className='team-tiles'>
-          {!userInGame ? (
-            <div className='team-tile-container' style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <input className='username-input' placeholder='Type your name...' type='text' onChange={(e) => setTempUsername(e.target.value)} />
-              <button style={{ backgroundColor: 'transparent', border: 'none', outline: ' none', padding: '0', cursor: 'pointer' }} onClick={() => handleAddPlayer(tempUsername)}>
-                <img src={JoinIcon} width='30px' />
-              </button>
+          {teamNumber == 0 ? (
+            <div className='relative h-[50px] bg-white rounded-[12px] w-fit px-[12px] text-center team-tile-container' style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <select
+                ref={selectRef}
+                onChange={() => {
+                  handleAddTeam(Number(selectRef.current?.value));
+                }}
+                className={`text-center ${teamNumber == 0 && 'text-gray-400'} ${teamNumber != 0 && 'font-bold'} px-2 text-base w-[200px] h-full border-none outline-none`}
+              >
+                <option className='text-red-400' value={0}>
+                  Select team number
+                </option>
+                {Array(numberOfTeams)
+                  .fill({})
+                  .map((_, i) => (
+                    <option disabled={teams.includes(i + 1)} key={i + 1} value={i + 1}>
+                      Team {i + 1}
+                    </option>
+                  ))}
+              </select>
             </div>
           ) : (
-            users.map((user) => <TeamTile teamName={user} key={user} />)
+            <div className='flex flex-col items-center justify-center'>
+              <TeamTile teamName={'Team ' + teamNumber} />
+              <button
+                onClick={() => {
+                  handleRemoveTeam(teamNumber);
+                }}
+                className={`cursor-pointer hover:text-blue-800 text-blue-600 bg-transparent outline-none border-none`}
+              >
+                <p className='text-base underline'>Change team number</p>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -95,7 +111,7 @@ export default function WaitingRoom() {
 
 function TeamTile({ teamName }: { teamName: string }) {
   return (
-    <div className='team-tile-container'>
+    <div className='flex items-center justify-center h-[20px] bg-white rounded-[12px] w-[200px] py-[12px] team-tile-container'>
       <h3>{teamName}</h3>
     </div>
   );

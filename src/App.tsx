@@ -1,7 +1,6 @@
 import { createBrowserRouter, createHashRouter, redirect, RouterProvider } from 'react-router-dom';
-import { UsernameContextProvider } from './context/UsernameContext';
+import { TeamContextProvider } from './context/TeamContext';
 import Landing from './pages/Landing';
-import WaitingRoom, { loader as waitingRoomLoader } from './pages/WaitingRoom';
 import Host from './pages/Host';
 import Level from './pages/Level';
 import Leaderboard from './pages/Leaderboard';
@@ -9,6 +8,7 @@ import Test from './pages/Test';
 import CreateSession from './pages/CreateSession';
 import NewHost from './pages/Host';
 import Test2 from './pages/Test2';
+import WaitingRoom from './pages/WaitingRoom';
 
 function chooseRouter() {
   if (import.meta.env.DEV) {
@@ -19,7 +19,7 @@ function chooseRouter() {
 }
 
 function authLoader() {
-  const username = sessionStorage.getItem('username');
+  const username = sessionStorage.getItem('teamNumber');
   if (!username) {
     return redirect('/');
   }
@@ -39,7 +39,6 @@ const router = chooseRouter()(
     {
       path: '/waiting-room/:sessionID',
       element: <WaitingRoom />,
-      loader: waitingRoomLoader,
     },
     { path: '/create-session', element: <CreateSession /> },
     {
@@ -75,11 +74,11 @@ const router = chooseRouter()(
 console.log(import.meta.env.DEV);
 
 function App() {
-  let preventComitUntilBaseChanged;
+  // let preventComitUntilBaseChanged;
   return (
-    <UsernameContextProvider>
+    <TeamContextProvider>
       <RouterProvider router={router} />
-    </UsernameContextProvider>
+    </TeamContextProvider>
   );
 }
 

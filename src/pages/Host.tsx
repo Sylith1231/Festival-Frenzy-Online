@@ -8,7 +8,7 @@
 
 import Sun from '../assets/sun.png';
 import Rain from '../assets/rain.jpeg';
-import { arrayRemove, arrayUnion, collection, doc, getDocs, onSnapshot, query, updateDoc, where, writeBatch } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, doc, documentId, getDocs, onSnapshot, query, updateDoc, where, writeBatch } from 'firebase/firestore';
 import { useEffect, useRef, useState } from 'react';
 import { firestore } from '../firebase';
 import { useParams } from 'react-router-dom';
@@ -18,18 +18,21 @@ import festivalData from '../data/FestivalData.json';
 import Switch from 'react-switch';
 import { calculateWeatherProbability } from '../utilities/calculateWeatherProbability';
 import { FaDiceOne, FaDiceTwo, FaDiceThree, FaDiceFour, FaDiceFive, FaDiceSix } from 'react-icons/fa';
+import { remove } from 'firebase/database';
+import { sleep } from '../utilities/sleep';
 
 export default function Host() {
-  const [users, setUsers] = useState<string[] | null>(null);
+  const [teams, setTeams] = useState<number[] | null>(null);
 
   //Consider changing to <boolean|null> (think about loading component if any state is null).
-  const [allowNewUsers, setAllowNewUsers] = useState<boolean>(true);
+  const [allowNewTeams, setAllowNewTeams] = useState<boolean>(true);
   const [currentLevel, setCurrentLevel] = useState<number | null>(null);
-  const [ordersSubmitted, setOrdersSubmitted] = useState<string[] | null>(null);
+  const [ordersSubmitted, setOrdersSubmitted] = useState<number[] | null>(null);
   const [activeButton, setActiveButton] = useState<number>(0);
   const [code, setCode] = useState<string | null>(null);
-  const [removePlayer, setRemovePlayer] = useState<string | null>(null);
+  const [removeTeam, setRemoveTeam] = useState<number | null>(null);
   const [showInputDiceModal, setShowInputDiceModal] = useState<boolean>(false);
+  const [dieRolling, setDieRolling] = useState<boolean>(false);
   const levelData = currentLevel ? (festivalData[currentLevel - 1] as levelData) : null;
   //TODO deal with sessionID not being defined.
   const sessionID = useParams().sessionID ?? '';
@@ -41,8 +44,8 @@ export default function Host() {
     const unsubscribe = onSnapshot(docRef, (doc) => {
       const data = doc.data();
       if (data) {
-        setUsers(data.users ?? null);
-        setAllowNewUsers(data.allowNewUsers ?? null);
+        setTeams(data.teams ?? null);
+        setAllowNewTeams(data.allowNewTeams ?? null);
         setCurrentLevel(data.currentLevel ?? null);
         setOrdersSubmitted(data.ordersSubmitted ?? null);
         setCode(data.code ?? null);
@@ -68,10 +71,10 @@ export default function Host() {
   async function handleStartGame() {
     const docRef = doc(firestore, 'sessions', sessionID);
     const batch = writeBatch(firestore);
-    users?.forEach((user) => {
-      batch.set(doc(docRef, 'players', user), { balance: 100, orders: {} });
+    teams?.forEach((team) => {
+      batch.set(doc(docRef, 'teams', String(team)), { balance: 100, orders: {} });
     });
-    batch.update(docRef, { gameStarted: true, currentLevel: 1, allowNewUsers: false, ordersSubmitted: [] });
+    batch.update(docRef, { gameStarted: true, currentLevel: 1, allowNewTeams: false, ordersSubmitted: [] });
     await batch
       .commit()
       .then(() => {
@@ -83,11 +86,11 @@ export default function Host() {
   }
 
   async function autofillOrders() {
-    const orderNotSubmitted = users?.filter((user) => !ordersSubmitted?.includes(user));
+    const orderNotSubmitted = teams?.filter((team) => !ordersSubmitted?.includes(team)).map((teamNumber) => String(teamNumber));
     if (orderNotSubmitted?.length == 0) return;
-    const colRef = collection(firestore, 'sessions', sessionID, 'players');
+    const colRef = collection(firestore, 'sessions', sessionID, 'teams');
     //TODO ask if this is okay and for more info on stack overflow.
-    const q = query(colRef, where('__name__', 'in', orderNotSubmitted));
+    const q = query(colRef, where(documentId(), 'in', orderNotSubmitted));
     const querySnapshot = await getDocs(q);
     const batch = writeBatch(firestore);
     querySnapshot.forEach((doc) => {
@@ -110,13 +113,13 @@ export default function Host() {
 
     await autofillOrders();
 
-    await updateBalances({ dice: diceRolls, manualInput: false })
-      .then(() => {
-        setActiveButton(3);
-      })
-      .catch((error) => {
-        console.log('error🤯: ', error);
-      });
+    await updateBalances({ dice: diceRolls, manualInput: false }).catch((error) => {
+      console.log('error🤯: ', error);
+    });
+
+    setDieRolling(true);
+    await sleep(10000);
+    setDieRolling(false);
   }
 
   async function handleNext() {
@@ -130,7 +133,7 @@ export default function Host() {
     batch.update(doc(firestore, 'sessions', sessionID), {
       [`dieValues.${currentLevel}`]: diceRolls,
     });
-    const snapshot = await getDocs(collection(firestore, 'sessions', sessionID, 'players'));
+    const snapshot = await getDocs(collection(firestore, 'sessions', sessionID, 'teams'));
     const goodWeather = levelData?.weather[diceRolls.dice[0] + diceRolls.dice[1]] == 1;
     snapshot.forEach((doc) => {
       const data = doc.data();
@@ -157,8 +160,8 @@ export default function Host() {
         <div className='flex gap-x-4'>
           {/* Players / Leaderboard Section */}
           <div className='bg-white rounded-xl p-4'>
-            <p className='m-0 text-2xl text-gray-800 font-bold'>Players</p>
-            <ul className='h-full list-none p-0'>{users ? users.sort().map((user) => <PlayerEntry key={user} username={user} sessionID={sessionID} orderSubmitted={currentLevel! <= 0 ? null : ordersSubmitted?.includes(user)} setRemovePlayer={setRemovePlayer} />) : 'TODO ERROR'}</ul>
+            <p className='m-0 text-2xl text-gray-800 font-bold'>Teams</p>
+            <ul className='h-full list-none p-0'>{teams ? teams.sort().map((team) => <TeamEntry key={team} teamNumber={team} sessionID={sessionID} orderSubmitted={currentLevel! <= 0 ? null : ordersSubmitted?.includes(team)} setRemoveTeam={setRemoveTeam} />) : 'TODO ERROR'}</ul>
           </div>
           {/* Session Data / Festival Data */}
           <div className='flex flex-col gap-y-4'>
@@ -171,13 +174,13 @@ export default function Host() {
                     Code: <span className='underline text-sky-500'>{code}</span>
                   </p>
                   <div className='mx-2 border border-solid border-transparent border-l-gray-300 h-4' />
-                  <p className='m-0 italic text-md'>{users?.length ?? 0} players</p>
+                  <p className='m-0 italic text-md'>{teams?.length ?? 0} teams</p>
                   <div className='mx-2 border border-solid border-transparent border-l-gray-300 h-4' />
                   <p className={`m-0 italic text-md ${currentLevel == 0 ? 'text-red-500' : 'text-[#4CAF50]'}`}>{currentLevel == 0 ? 'waiting room' : 'in progress'}</p>
                 </div>
                 <div className='mt-2 flex items-center gap-x-2'>
-                  <p className='m-0 text-md'>Allow players to join: </p>
-                  <Switch checked={allowNewUsers} onChange={async (checked) => updateDoc(doc(firestore, 'sessions', sessionID), { allowNewUsers: checked })} onColor='#38bdf8' offColor='#ef4444' activeBoxShadow='' height={28 * 0.8} width={56 * 1 * 0.8} handleDiameter={24 * 0.8} />
+                  <p className='m-0 text-md'>Allow teams to join: </p>
+                  <Switch checked={allowNewTeams} onChange={async (checked) => updateDoc(doc(firestore, 'sessions', sessionID), { allowNewTeams: checked })} onColor='#38bdf8' offColor='#ef4444' activeBoxShadow='' height={28 * 0.8} width={56 * 1 * 0.8} handleDiameter={24 * 0.8} />
                 </div>
               </div>
               {/* Buttons */}
@@ -189,12 +192,21 @@ export default function Host() {
                       <MdRocketLaunch />
                     </IconContext.Provider>
                   </button>
-                  <button onClick={handleNext} disabled={activeButton != 3} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#03A9F4] cursor-pointer disabled:cursor-default bg-white hover:bg-[#E1F5FE] rounded-lg h-full`}>
-                    <p className={`${activeButton != 3 && 'text-gray-300'} m-0 font-bold text-lg text-[#03A9F4]`}>Next</p>
-                    <IconContext.Provider value={{ color: `${activeButton != 3 ? '#D1D5DB' : '#03A9F4'}`, size: '2em' }}>
-                      <MdNavigateNext />
-                    </IconContext.Provider>
-                  </button>
+                  {!dieRolling ? (
+                    <button onClick={handleNext} disabled={activeButton != 3} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#03A9F4] cursor-pointer disabled:cursor-default bg-white hover:bg-[#E1F5FE] rounded-lg h-full`}>
+                      <p className={`${activeButton != 3 && 'text-gray-300'} m-0 font-bold text-lg text-[#03A9F4]`}>Next</p>
+                      <IconContext.Provider value={{ color: `${activeButton != 3 ? '#D1D5DB' : '#03A9F4'}`, size: '2em' }}>
+                        <MdNavigateNext />
+                      </IconContext.Provider>
+                    </button>
+                  ) : (
+                    <button onClick={handleNext} disabled={true} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#03A9F4] cursor-pointer disabled:cursor-default bg-white hover:bg-[#E1F5FE] rounded-lg h-full`}>
+                      <p className={`text-gray-300 m-0 font-bold text-lg`}>Next</p>
+                      <IconContext.Provider value={{ color: '#D1D5DB', size: '2em' }}>
+                        <MdNavigateNext />
+                      </IconContext.Provider>
+                    </button>
+                  )}
                 </div>
                 <div className='w-full flex flex-col gap-y-2'>
                   <button onClick={handleRollDice} disabled={activeButton != 2} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#EF5350] cursor-pointer disabled:cursor-default bg-white hover:bg-[#FFEBEE] rounded-lg h-full`}>
@@ -259,58 +271,58 @@ export default function Host() {
           </div>
         </div>
       </div>
-      <RemovePlayerModal removePlayer={removePlayer} setRemovePlayer={setRemovePlayer} sessionID={sessionID} />
+      <RemoveTeamModal removeTeam={removeTeam} setRemoveTeam={setRemoveTeam} sessionID={sessionID} />
       {showInputDiceModal && <InputDiceModal autofillOrders={autofillOrders} updateBalances={updateBalances} setActiveButton={setActiveButton} setShowInputDiceModal={setShowInputDiceModal} />}
     </>
   );
 }
 
-type PlayerEntryProps = {
-  username: string;
+type TeamEntryProps = {
+  teamNumber: number;
   sessionID: string;
   orderSubmitted?: boolean | null;
-  setRemovePlayer: React.Dispatch<React.SetStateAction<string | null>>;
+  setRemoveTeam: React.Dispatch<React.SetStateAction<number | null>>;
 };
 
-function PlayerEntry({ username, sessionID, orderSubmitted, setRemovePlayer }: PlayerEntryProps) {
+function TeamEntry({ teamNumber, sessionID, orderSubmitted, setRemoveTeam }: TeamEntryProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleOnKeyUp(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
-      if (inputRef.current && inputRef.current?.value !== username) {
+      if (inputRef.current && inputRef.current?.value !== 'Team ' + teamNumber) {
         const docRef = doc(firestore, 'sessions', sessionID);
         const newUsername = inputRef.current.value;
         const batch = writeBatch(firestore);
-        batch.update(docRef, { users: arrayUnion(newUsername) });
-        batch.update(docRef, { users: arrayRemove(username) });
+        batch.update(docRef, { teams: arrayUnion(newUsername) });
+        batch.update(docRef, { teams: arrayRemove(teamNumber) });
         await batch.commit();
       }
     }
   }
   async function handleOnKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Tab') {
-      if (inputRef.current && inputRef.current?.value !== username) {
+      if (inputRef.current && inputRef.current?.value !== 'Team ' + teamNumber) {
         const docRef = doc(firestore, 'sessions', sessionID);
         const newUsername = inputRef.current.value;
         const batch = writeBatch(firestore);
-        batch.update(docRef, { users: arrayUnion(newUsername) });
-        batch.update(docRef, { users: arrayRemove(username) });
+        batch.update(docRef, { teams: arrayUnion(newUsername) });
+        batch.update(docRef, { teams: arrayRemove(teamNumber) });
         await batch.commit();
       }
     }
   }
 
   function handleOnBlur() {
-    if (inputRef.current && inputRef.current?.value !== username) {
-      inputRef.current.value = username;
+    if (inputRef.current && inputRef.current?.value !== 'Team ' + teamNumber) {
+      inputRef.current.value = 'Team ' + teamNumber;
     }
   }
 
   return (
     <li className='flex items-center justify-center gap-x-2 mb-1'>
       {/* Disable input when game started */}
-      <input ref={inputRef} onKeyDown={handleOnKeyDown} onKeyUp={handleOnKeyUp} onBlur={handleOnBlur} defaultValue={username} type='text' className={`text-center rounded border-2 border-solid ${orderSubmitted === null && 'border-gray-300'} ${orderSubmitted !== null && (orderSubmitted ? 'border-[#4CAF50]' : 'border-red-500')} px-6 py-0.5 w-20 text-base m-0`} />
-      <button onClick={() => setRemovePlayer(username)} className='outline-none inline-block bg-transparent border-none p-0 cursor-pointer'>
+      <input disabled={true} ref={inputRef} onKeyDown={handleOnKeyDown} onKeyUp={handleOnKeyUp} onBlur={handleOnBlur} defaultValue={'Team ' + teamNumber} type='text' className={`text-center rounded border-2 border-solid ${orderSubmitted === null && 'border-gray-300'} ${orderSubmitted !== null && (orderSubmitted ? 'border-[#4CAF50]' : 'border-red-500')} px-6 py-0.5 w-20 text-base m-0`} />
+      <button onClick={() => setRemoveTeam(teamNumber)} className='outline-none inline-block bg-transparent border-none p-0 cursor-pointer'>
         <IconContext.Provider value={{ color: '#F5F5F5', size: '1.8em', className: 'remove-player-icon' }}>
           <MdPersonRemove />
         </IconContext.Provider>
@@ -454,36 +466,36 @@ function InputDiceModal({ autofillOrders, updateBalances, setActiveButton, setSh
   );
 }
 
-type RemovePlayerModalProps = {
-  removePlayer: string | null;
+type RemoveTeamModalProps = {
+  removeTeam: number | null;
   sessionID: string;
-  setRemovePlayer: React.Dispatch<React.SetStateAction<string | null>>;
+  setRemoveTeam: React.Dispatch<React.SetStateAction<number | null>>;
 };
 
-function RemovePlayerModal({ removePlayer, sessionID, setRemovePlayer }: RemovePlayerModalProps) {
-  if (removePlayer == null) return null;
+function RemoveTeamModal({ removeTeam, sessionID, setRemoveTeam }: RemoveTeamModalProps) {
+  if (removeTeam == null) return null;
 
-  async function handleRemovePlayer(username: string) {
+  async function handleRemoveTeam(teamNumber: number) {
     const docRef = doc(firestore, 'sessions', sessionID);
     await updateDoc(docRef, {
-      users: arrayRemove(username),
+      teams: arrayRemove(teamNumber),
     });
-    setRemovePlayer(null);
+    setRemoveTeam(null);
   }
 
   return (
     <div className='z-50 fixed flex items-center justify-center inset-0 bg-black bg-opacity-80'>
       <div className='flex flex-col items-center gap-y-4 bg-white rounded-lg p-4'>
         <p className='text-lg m-0'>
-          Remove <span className='underline font-bold'>{removePlayer}</span> from the session?
+          Remove <span className='underline font-bold'>{'Team ' + removeTeam}</span> from the session?
         </p>
         <div className='flex gap-x-2'>
-          <button onClick={() => setRemovePlayer(null)} className='cursor-pointer w-[150px] bg-[#FFEBEE] border-2 border-solid border-gray-200 hover:border-[#EF5350] rounded'>
+          <button onClick={() => setRemoveTeam(null)} className='cursor-pointer w-[150px] bg-[#FFEBEE] border-2 border-solid border-gray-200 hover:border-[#EF5350] rounded'>
             <IconContext.Provider value={{ color: '#EF5350', size: '2.5em' }}>
               <MdClose />
             </IconContext.Provider>
           </button>
-          <button onClick={() => handleRemovePlayer(removePlayer)} className='cursor-pointer w-[150px] bg-[#E8F5E9] border-2 border-solid border-gray-200 hover:border-[#4CAF50] rounded'>
+          <button onClick={() => handleRemoveTeam(removeTeam)} className='cursor-pointer w-[150px] bg-[#E8F5E9] border-2 border-solid border-gray-200 hover:border-[#4CAF50] rounded'>
             <IconContext.Provider value={{ color: '#4CAF50', size: '2.5em' }}>
               <MdDone />
             </IconContext.Provider>

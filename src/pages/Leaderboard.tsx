@@ -23,12 +23,12 @@ export default function Leaderboard() {
     return () => unsubscribe();
   }, []);
 
-  type leaderboardEntry = [username: string, balance: number];
+  type leaderboardEntry = [teamNumber: number, balance: number];
   async function getRankings() {
     const leaderboardEntries: leaderboardEntry[] = [];
-    const colRef = collection(firestore, 'sessions', sessionID, 'players');
+    const colRef = collection(firestore, 'sessions', sessionID, 'teams');
     await getDocs(colRef).then((snapshot) => {
-      snapshot.forEach((doc) => leaderboardEntries.push([doc.id, doc.data()?.balance]));
+      snapshot.forEach((doc) => leaderboardEntries.push([Number(doc.id), doc.data()?.balance]));
     });
     return leaderboardEntries.sort((a, b) => b[1] - a[1]);
   }
@@ -41,13 +41,13 @@ export default function Leaderboard() {
           <h1 style={{ fontSize: 50 }}>LEADERBOARD</h1>
           <img src={Medal} />
         </div>
-        <ol>
-          {rankings.map(([username, balance]) => (
-            <li key={username}>
-              {username}: £{balance}
+        <ul className='list-none'>
+          {rankings.map(([teamNumber, balance]) => (
+            <li key={teamNumber}>
+              {'Team ' + teamNumber}: £{balance}
             </li>
           ))}
-        </ol>
+        </ul>
       </div>
     </div>
   );
