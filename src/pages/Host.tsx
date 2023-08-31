@@ -207,9 +207,9 @@ export default function Host() {
               {/* Buttons */}
               <div className='flex w-full gap-x-2'>
                 <div className='w-full flex flex-col gap-y-2'>
-                  <button onClick={handleStartGame} disabled={activeButton != 1} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#4CAF50] cursor-pointer disabled:cursor-default  bg-white hover:bg-[#E8F5E9] rounded-lg h-full`}>
-                    <p className={`${activeButton != 1 && 'text-gray-300'} m-0 font-bold text-lg text-[#4CAF50]`}>Start Game</p>
-                    <IconContext.Provider value={{ color: `${activeButton != 1 ? '#D1D5DB' : '#4CAF50'}`, size: '2em' }}>
+                  <button onClick={handleStartGame} disabled={activeButton != 1 || teams!.length < 2} className={`flex disabled:border-gray-200 disabled:bg-gray-100 items-center justify-center gap-x-2 border-2 border-solid border-[#4CAF50] cursor-pointer disabled:cursor-default  bg-white hover:bg-[#E8F5E9] rounded-lg h-full`}>
+                    <p className={`${(activeButton != 1 || teams!.length < 2) && 'text-gray-300'} m-0 font-bold text-lg text-[#4CAF50]`}>Start Game</p>
+                    <IconContext.Provider value={{ color: `${activeButton != 1 || teams!.length < 2 ? '#D1D5DB' : '#4CAF50'}`, size: '2em' }}>
                       <MdRocketLaunch />
                     </IconContext.Provider>
                   </button>
