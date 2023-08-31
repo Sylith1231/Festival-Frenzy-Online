@@ -26,6 +26,8 @@ import Die5 from '../assets/die/die5.png';
 import Die6 from '../assets/die/die6.png';
 import Countdown from 'react-countdown';
 
+const joinSessionMessage = (code: string) => `Join my Festival Frenzy session here!\nhttps://sylith1231.github.io/Festival-Frenzy-Online/\n\nCode: ${code}`;
+
 export default function Host() {
   const [teams, setTeams] = useState<number[] | null>(null);
 
@@ -189,7 +191,9 @@ export default function Host() {
             <div className='flex gap-x-4'>
               {/* Session Data */}
               <div className='flex-none flex flex-col w-fit h-fit gap-y-3 bg-white p-4 px-4 rounded-xl'>
-                <p className='m-0 text-2xl text-gray-800 font-bold'>Session ({sessionID})</p>
+                <p onClick={() => navigator.clipboard.writeText(joinSessionMessage(code!))} className='hover:underline hover:text-sky-500 active:text-sky-700 cursor-pointer m-0 text-2xl text-gray-800 font-bold'>
+                  Session ({sessionID})
+                </p>
                 <div className='flex items-center'>
                   <p className='m-0 text-md italic'>
                     Code: <span className='underline text-sky-500'>{code}</span>
